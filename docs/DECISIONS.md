@@ -44,3 +44,8 @@
 - **Security basics:** pending/policy/audit `0700`/`0600`; audit hash-chained and redacted; `vigil decide` refused from an agent pid; overlay IPC has no `allow()`; writes to Vigil state and `vigil decide` are DENY-class `self-approve`; desktop-kill (`hyprctl dispatch exit|exec`) and `omarchy plugin add|enable|remove` are deadly; reboot/shutdown deadly. No cloud, no `$` in the bar, no LLM classifier.
 - **Rejected:** becoming herdr / omarchy.agents / omaharness; Landlock as v1 (plugin has no sudo); a bar pet; kernel LSM as the product; auto-unfreeze on unlock (lid holds until a human key); Always inheriting as a command regex (that was a lie).
 - Landlock / Rust gate stay later. OpenCode/Codex install still unwired. Cooperative hooks stay the honest limitation.
+
+## 2026-09-02 README and card copy in full sentences
+- User: compact lines like "Everything. Panic, or the lid." are hard to read. Make the writing a bit longer, simple, easy to understand — not only that line, everything else.
+- **Decision:** GitHub README, plugin description, house-law skill, overlay/panel status lines, and away/incident card copy use complete sentences. Keyboard legends on the card stay one line (Omarchy polkit density). ADR log stays terse (it is for tools, not strangers).
+- **Rejected:** leaving the README in telegram fragments; turning the overlay key row into paragraphs (it would overflow the card).

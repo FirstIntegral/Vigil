@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 ARTICLES = (
     ("I", "Never delete / or $HOME."),
     ("II", "Never pipe the internet into a shell."),
     ("III", "Never format a disk or write raw to /dev."),
-    ("IV", "Never force-push main."),
-    ("V", "Never inject a plugin or kill the compositor unsupervised."),
+    ("IV", "Never force-push main or master."),
+    ("V", "Never inject a plugin or kill the compositor unless a human allowed it."),
 )
 
 _CLASS_ARTICLE = {
@@ -34,22 +36,28 @@ def article_for(class_id: str) -> str:
 
 
 def skill_markdown() -> str:
+    path = Path(__file__).resolve().parents[1] / "skill" / "SKILL.md"
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
     lines = [
         "# Vigil",
         "",
         "You are on Omarchy. Vigil is the seatbelt for your tool calls.",
-        "YOLO is fine inside the lease. Do not route around the card.",
+        "YOLO is fine for ordinary work inside the lease. Do not route around the polkit card.",
         "",
-        "House law:",
+        "## House law",
     ]
     for roman, text in ARTICLES:
         lines.append(f"- Article {roman}: {text}")
     lines.extend(
         [
             "",
-            "Do not run `vigil decide`. Do not write `~/.local/state/vigil/**`.",
-            "Do not `omarchy plugin add --yes` unless the human already allowed it.",
-            "If a polkit card is up, wait. Silence is deny.",
+            "## Do not",
+            "",
+            "- Do not run `vigil decide`. That is how a human answers a card.",
+            "- Do not write under `~/.local/state/vigil/` or `~/.config/vigil/`.",
+            "- Do not run `omarchy plugin add` unless the human already allowed it.",
+            "- Do not treat silence as permission. Silence is deny.",
             "",
         ]
     )

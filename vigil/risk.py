@@ -290,7 +290,7 @@ def classify(call: ToolCall) -> Risk:
             ASK,
             "subagent",
             "Spawn another agent",
-            call.summary + " Child starts with an empty session wallet.",
+            call.summary + " The child starts with an empty session wallet and does not inherit Always tickets.",
             blast="child wallet empty",
         )
 
@@ -349,7 +349,14 @@ def classify(call: ToolCall) -> Risk:
             reversible=False,
         )
     if _CHMOD_ROOT.search(cmd):
-        return _risk(call, DENY, "chmod-root", "chmod 777 /", "Blocked.", reversible=False)
+        return _risk(
+            call,
+            DENY,
+            "chmod-root",
+            "chmod 777 /",
+            "Blocked. World-writable / would open the whole machine.",
+            reversible=False,
+        )
     if _FORCE_MAIN.search(cmd):
         return _risk(
             call,

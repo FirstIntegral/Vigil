@@ -217,13 +217,13 @@ Panel {
             Text {
               text: {
                 if (!root.serviceReady) return "scanning…"
-                if (!root.hooksLive) return "hooks off · press i to arm"
-                if (root.incident) return "U unfreeze · W rewind · N stay frozen"
-                if (root.mode === "off") return "off · nothing is held · m cycles"
-                if (root.frozen) return "frozen · every tool call denied"
-                if (root.mode === "ask") return "ask · risky calls wait for you"
-                if (root.waitingCount > 0) return "Y allow · N deny · A ticket"
-                return "seatbelt · deadly only · alerts:" + root.alert
+                if (!root.hooksLive) return "hooks off — press i to start watching tool calls"
+                if (root.incident) return "U let them run · W restore files · N keep frozen"
+                if (root.mode === "off") return "off — nothing is held. m cycles mode"
+                if (root.frozen) return "frozen — every tool call is denied until you unfreeze"
+                if (root.mode === "ask") return "ask — risky calls wait for you"
+                if (root.waitingCount > 0) return "Y allow once · N deny · A always this class"
+                return "seatbelt — only deadly calls wait · alerts: " + root.alert
               }
               color: Qt.darker(root.contentForeground, 1.4)
               font.family: root.contentFontFamily
@@ -296,7 +296,7 @@ Panel {
           visible: root.dossier && root.dossier.counts
           text: {
             var c = root.dossier.counts || {}
-            return "today · " + (c.tools || 0) + " tools · " + (c.deny || 0) + " denied · " + (c.allow || 0) + " allowed"
+            return "today: " + (c.tools || 0) + " tool calls, " + (c.deny || 0) + " denied, " + (c.allow || 0) + " allowed"
           }
           color: root.contentForeground
           opacity: 0.45
@@ -307,7 +307,7 @@ Panel {
 
         Text {
           visible: root.dossier && root.dossier.lastDenied && root.dossier.lastDenied.summary
-          text: "last denied · " + String(root.dossier.lastDenied.summary || "")
+          text: "last denied: " + String(root.dossier.lastDenied.summary || "")
           color: root.contentForeground
           opacity: 0.45
           font.family: root.contentFontFamily

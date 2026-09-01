@@ -1,7 +1,7 @@
 # Vigil
 
 ## Overview
-Omarchy Quattro plugin: **constitution for coding agents**. Default mode lets YOLO run; only machine-killers get a polkit card. Tickets (not argv), passports, envelopes, lid-freeze, ghosts, rewind. Overlay uses `[polkit]` tokens + `BorderSurface`. Toasts go through `notify-send`. Plugin id `xyz.brwsk.vigil`.
+Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; only machine-killing calls get a polkit card. Tickets remember a class (not the full command), plus passports, envelopes, lid-freeze, ghosts, rewind. Overlay uses `[polkit]` tokens + `BorderSurface`. Toasts go through `notify-send`. Plugin id `xyz.brwsk.vigil`. User-facing copy (README, cards, skill) uses complete sentences. Keyboard legends stay one line.
 
 ## Stack / Conventions
 - Python 3.11+, stdlib only. Tests via `unittest`.

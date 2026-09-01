@@ -5,7 +5,7 @@
   "version": "0.5.0",
   "author": "Brusk Kawa Abdalla",
   "license": "MIT",
-  "description": "Constitution for Omarchy agents. Seatbelt by default. Tickets, papers, lid freeze, ghosts on the glass, rewind. Bar + toast. YOLO stays fast; deadly still stops.",
+  "description": "Seatbelt for coding agents on Omarchy. Everyday work stays fast. Machine-killing tool calls wait on a polkit card. Tickets, papers, lid freeze, window ghosts, rewind.",
   "kinds": ["service", "bar-widget", "overlay"],
   "keepLoaded": true,
   "entryPoints": {
@@ -15,7 +15,7 @@
   },
   "barWidget": {
     "displayName": "Vigil",
-    "description": "Agent papers, pending cards, freeze, rewind, kill switch.",
+    "description": "Who is running, what they may do, freeze, rewind, kill switch.",
     "category": "AI",
     "aliases": ["vigil", "agents", "kill-switch", "little-snitch"],
     "allowMultiple": false,

@@ -268,8 +268,8 @@ Item {
 
         Text {
           text: root.awayCard
-            ? "N stay frozen   U unfreeze   W rewind"
-            : "N deny   Y once   S session   A ticket"
+            ? "N keep frozen    U let them run    W restore files"
+            : "N deny    Y allow once    S this session    A always this class"
           color: root.foreground
           opacity: 0.36
           font.family: root.fontFamily

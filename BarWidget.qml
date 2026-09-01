@@ -112,7 +112,7 @@ BarWidget {
       if (root.service.incident)
         return "Vigil · INCIDENT"
       if (root.service.frozen)
-        return "Vigil · FROZEN · every tool call denied"
+        return "Vigil · frozen — every tool call is denied until you unfreeze"
       if (root.service.alertLine)
         return root.service.alertLine
       if (!root.hasAgents)

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "xyz.brwsk.vigil",
+  "name": "Vigil",
+  "version": "0.4.1",
+  "author": "Brusk Kawa Abdalla",
+  "license": "MIT",
+  "description": "Seatbelt for coding agents. Default alert is the bar: a warning icon and 'Grok is trying to Y'. Optional Omarchy toasts. YOLO stays fast; deadly commands still stop. Trust 1h, panic freeze, black box.",
+  "kinds": ["service", "bar-widget", "overlay"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml",
+    "overlay": "Overlay.qml"
+  },
+  "barWidget": {
+    "displayName": "Vigil",
+    "description": "Pending agent approvals, freeze, and a kill switch.",
+    "category": "AI",
+    "aliases": ["vigil", "agents", "kill-switch", "little-snitch"],
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "refreshIntervalSec": 1,
+      "iconOnly": false
+    },
+    "schema": [
+      {
+        "key": "refreshIntervalSec",
+        "type": "integer",
+        "label": "Refresh interval (seconds)",
+        "min": 1,
+        "max": 30,
+        "step": 1,
+        "defaultValue": 1
+      },
+      {
+        "key": "iconOnly",
+        "type": "boolean",
+        "label": "Icon only",
+        "defaultValue": false
+      }
+    ]
+  }
+}

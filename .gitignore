@@ -1,0 +1,21 @@
+# Local AI session files — never commit unless the user says otherwise
+session_compact.md
+session_transcript.md
+claude_memory_import.md
+
+# Legacy session paths (retired 2026-07; keep ignored if present)
+docs/SESSION.md
+docs/session-archive/
+docs/session-flushes/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+*.egg-info/
+.ruff_cache/
+
+# Collector runtime (never commit live snapshots)
+.vigil-test-state/

@@ -1,0 +1,157 @@
+import QtQuick
+import QtQuick.Controls
+import Quickshell
+import Quickshell.Io
+import qs.Ui
+import qs.Commons
+
+// Bar face for Vigil. Heavy lifting is Service.qml; this only paints
+// the count and hosts the panel.
+BarWidget {
+  id: root
+  moduleName: "xyz.brwsk.vigil"
+
+  readonly property var service: bar && bar.shell ? bar.shell.serviceFor("xyz.brwsk.vigil") : null
+  readonly property string label: service ? service.barLabel : "…"
+  readonly property string glyph: service ? service.glyph : "󰈈"
+  readonly property bool alarming: service ? service.alarming : false
+  readonly property bool hasAgents: service ? service.hasAgents : false
+
+  readonly property var verticalLines: {
+    if (!root.vertical) return []
+    var lines = [root.glyph]
+    if (!root.iconOnly && root.label) {
+      var parts = String(root.label).split(" ")
+      for (var i = 0; i < parts.length; i++) if (parts[i]) lines.push(parts[i])
+    }
+    return lines
+  }
+
+  readonly property bool iconOnly: {
+    var v = root.setting("iconOnly", false)
+    return v === true || v === "true"
+  }
+
+  function toggleIconOnly() {
+    var next = !root.iconOnly
+    var entry = { id: root.moduleName }
+    for (var key in root.settings) if (key !== "id") entry[key] = root.settings[key]
+    entry.iconOnly = next
+    root.settings = entry
+    if (root.bar && root.bar.shell && typeof root.bar.shell.updateEntryInline === "function")
+      root.bar.shell.updateEntryInline(root.moduleName, entry)
+  }
+
+  readonly property real openPanelIndicatorWidth: {
+    if (root.iconOnly && !root.vertical && iconGlyph)
+      return Math.max(1, Math.round(iconGlyph.tightWidth))
+    return button.labelWidth
+  }
+  readonly property real openPanelIndicatorHeight: Math.max(Style.space(10), Math.round(Style.bar.iconSlot * 0.55))
+
+  readonly property bool opened: panelLoader.item ? panelLoader.item.opened === true : false
+
+  function open() { if (panelLoader.item) panelLoader.item.open() }
+  function close() { if (panelLoader.item) panelLoader.item.close() }
+  function togglePanel() { if (panelLoader.item) panelLoader.item.toggle() }
+  readonly property bool popoutSwitchClosing: panelLoader.item ? panelLoader.item.popoutSwitchClosing === true : false
+  function closeForPopoutSwitch() {
+    if (panelLoader.item) panelLoader.item.closeForPopoutSwitch()
+  }
+
+  function injectPanel() {
+    var target = panelLoader.item
+    if (!target) return
+    if ("bar" in target) target.bar = root.bar
+    if ("settings" in target) target.settings = root.settings
+    if ("anchorItem" in target) target.anchorItem = button
+    if ("hostWidget" in target) target.hostWidget = root
+  }
+
+  implicitWidth: button.implicitWidth
+  implicitHeight: button.implicitHeight
+
+  onBarChanged: injectPanel()
+  onSettingsChanged: injectPanel()
+
+  Loader {
+    id: panelLoader
+    active: true
+    source: Qt.resolvedUrl("Panel.qml")
+    visible: false
+    onLoaded: {
+      root.injectPanel()
+      Qt.callLater(root.injectPanel)
+    }
+  }
+
+  IpcHandler {
+    target: "xyz.brwsk.vigil"
+    function open(): void { root.open() }
+    function close(): void { root.close() }
+    function show(): void { root.open() }
+    function hide(): void { root.close() }
+    function toggle(): void { root.togglePanel() }
+    function refresh(): void { if (root.service) root.service.refresh() }
+  }
+
+  WidgetButton {
+    id: button
+    anchors.fill: parent
+    bar: root.bar
+    text: root.vertical
+      ? ""
+      : root.iconOnly ? root.glyph : root.glyph + " " + root.label
+    labelVisible: !root.vertical && !root.iconOnly
+    hasVisualContent: root.vertical ? root.verticalLines.length > 0 : text !== ""
+    fixedHeight: root.vertical ? root.verticalLines.length * Style.bar.iconSlot : -1
+    horizontalMargin: 8.5
+    tooltipText: {
+      if (!root.service || !root.service.ready)
+        return "Vigil · scanning"
+      if (root.service.frozen)
+        return "Vigil · FROZEN · every tool call denied"
+      if (root.service.alertLine)
+        return root.service.alertLine
+      if (!root.hasAgents)
+        return "Vigil · no coding agents running"
+      var n = root.service.agentCount
+      return "Vigil · " + n + (n === 1 ? " agent" : " agents")
+    }
+    onPressed: function(b) {
+      if (b === Qt.RightButton) root.toggleIconOnly()
+      else root.togglePanel()
+    }
+
+    OpticalGlyph {
+      id: iconGlyph
+      visible: !root.vertical && root.iconOnly
+      anchors.fill: parent
+      text: root.glyph
+      fontFamily: button.fontFamily
+      fontSize: button.fontSize
+      color: root.service && root.service.severity === "critical"
+        ? Color.urgent
+        : (root.alarming ? Color.accent : button.foreground)
+    }
+
+    Column {
+      visible: root.vertical
+      anchors.fill: parent
+      Repeater {
+        model: root.verticalLines
+        OpticalGlyph {
+          required property string modelData
+          width: button.width
+          height: Style.bar.iconSlot
+          text: modelData
+          fontFamily: button.fontFamily
+          fontSize: modelData === root.glyph ? Style.font.icon : button.fontSize
+          color: root.service && root.service.severity === "critical"
+        ? Color.urgent
+        : (root.alarming ? Color.accent : button.foreground)
+        }
+      }
+    }
+  }
+}

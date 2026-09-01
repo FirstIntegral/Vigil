@@ -37,3 +37,10 @@
 
 ## 2026-09-02 Private GitHub remote
 - User asked for a private GitHub repo and a push. Remote is `git@github.com:FirstIntegral/vigil.git`. `AGENTS.md` `## Repo` updated the same turn. Checkpoint still never creates remotes; this one is an explicit human request.
+
+## 2026-09-02 Vigil is the constitution, not a second product
+- User: do it all — tickets, passports, envelopes, ghosts, lid, rewind, claims, MCP classes — Omarchy style, security and privacy, then push with a README that states capabilities, limits, and by-design.
+- **Same loop, stretched.** Hold the hook, polkit card, seatbelt default. Always now mints `t:agent:project:class` (and `mcp:server` / host extras), not the argv. Envelope is a per-passport cage the gate honours. Lid binds freeze to the lock screen (does not clone `omarchy.lock`). Ghosts are Hyprland client outlines on the existing overlay. Rewind is git + config CoW, not Timeshift.
+- **Security basics:** pending/policy/audit `0700`/`0600`; audit hash-chained and redacted; `vigil decide` refused from an agent pid; overlay IPC has no `allow()`; writes to Vigil state and `vigil decide` are DENY-class `self-approve`; desktop-kill (`hyprctl dispatch exit|exec`) and `omarchy plugin add|enable|remove` are deadly; reboot/shutdown deadly. No cloud, no `$` in the bar, no LLM classifier.
+- **Rejected:** becoming herdr / omarchy.agents / omaharness; Landlock as v1 (plugin has no sudo); a bar pet; kernel LSM as the product; auto-unfreeze on unlock (lid holds until a human key); Always inheriting as a command regex (that was a lie).
+- Landlock / Rust gate stay later. OpenCode/Codex install still unwired. Cooperative hooks stay the honest limitation.

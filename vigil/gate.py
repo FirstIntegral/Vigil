@@ -26,7 +26,13 @@ from vigil.pending import (
     write_request,
 )
 from vigil.policy import Policy, load_policy, save_policy
-from vigil.risk import ALLOW, ASK, DENY, Risk, classify
+from vigil.claims import claim as take_claim
+from vigil.claims import conflict as claim_conflict
+from vigil.envelope import apply_envelope
+from vigil.passport import envelope_for, make_id, upsert as upsert_passport
+from vigil.pending import write_surprise
+from vigil.rewind import should_cow, snapshot_file
+from vigil.risk import ALLOW, ASK, DENY, Risk, classify, is_secret_path, path_inside
 
 WaitFn = Callable[..., Any]
 
@@ -61,14 +67,16 @@ class GateResult:
     response: dict[str, Any]
 
 
-def apply_mode(mode: str, classified: str) -> str:
-    """YOLO-friendly seatbelt: only deadly calls are held. Off holds nothing."""
+def apply_mode(mode: str, classified: str, hold: bool = False) -> str:
+    """YOLO-friendly seatbelt: only deadly (or envelope-held) calls wait."""
     if mode == "off":
         return ALLOW
     if mode == "frozen":
         return DENY
     if mode == "seatbelt":
-        return ASK if classified == DENY else ALLOW
+        return ASK if classified == DENY or hold else ALLOW
+    if hold and classified == ALLOW:
+        return ASK
     return classified
 
 
@@ -80,10 +88,12 @@ def _apply_human(action: str, policy: Policy, risk: Risk, session_id: str) -> tu
         return ALLOW, "Allowed for this session."
     if action == "always":
         policy.remember_allow(risk.rule_key)
-        return ALLOW, "Always allowed this pattern."
+        return ALLOW, "Ticket minted for this agent, project, and class."
     if action == "deny-always":
         policy.remember_deny(risk.rule_key)
-        return DENY, "Always denied this pattern."
+        return DENY, "Ticket denied for this agent, project, and class."
+    if action in {"rewind", "unfreeze"}:
+        return DENY, "Not a tool-call action."
     return DENY, "Denied."
 
 
@@ -110,7 +120,23 @@ def gate_call(
                     "path": call.path,
                     "agent": call.agent_hint,
                     "phase": "post",
+                    "sessionId": call.session_id,
                 },
+            )
+        if _surprise(call):
+            pol.freeze()
+            save_policy(home, pol)
+            write_surprise(
+                home,
+                summary=call.summary,
+                path=call.path or "",
+                agent=call.agent_hint,
+            )
+            notify(
+                "Vigil · incident",
+                "An allowed write landed on a secret or outside the project.",
+                urgency="critical",
+                alert=pol.alert,
             )
         resp = hook_response(ALLOW, "logged")
         return GateResult(ALLOW, "logged", None, False, resp)
@@ -135,9 +161,27 @@ def gate_call(
         return GateResult(ALLOW, "Vigil is off.", None, False, resp)
 
     risk = classify(call)
+    env_name = envelope_for(
+        home, agent=call.agent_hint, session_id=call.session_id, cwd=call.workspace or call.cwd
+    )
+    risk = apply_envelope(env_name, risk, call)
+    passport_id = make_id(call.agent_hint, call.session_id, None)
+    if call.path and call.tool == "write":
+        held = claim_conflict(home, call.path, passport_id)
+        if held:
+            from dataclasses import replace
+
+            risk = replace(
+                risk,
+                decision=ASK,
+                hold=True,
+                class_id="claim",
+                title="Another agent holds this file",
+                reason=f"{held.get('agent') or 'another agent'} already writes {call.path}.",
+            )
     override = pol.key_override(risk, call.session_id)
     effective = "seatbelt" if pol.is_trusted(call.cwd, now) and mode == "ask" else mode
-    decision = override or apply_mode(effective, risk.decision)
+    decision = override or apply_mode(effective, risk.decision, hold=risk.hold)
     reason = risk.reason
     asked = False
 
@@ -153,6 +197,7 @@ def gate_call(
             risk=risk,
             created_at=_iso(now),
             expires_at=_iso(expires),
+            envelope=env_name,
         )
         notify("Vigil", risk.title + "\n" + call.summary, urgency="critical", alert=pol.alert)
         waiter = wait_fn if wait_fn is not None else wait_for_decision
@@ -164,6 +209,18 @@ def gate_call(
         else:
             decision, reason = _apply_human(human.action, pol, risk, call.session_id)
             save_policy(home, pol)
+
+    if decision == ALLOW:
+        upsert_passport(
+            home,
+            agent=call.agent_hint,
+            session_id=call.session_id,
+            cwd=call.workspace or call.cwd,
+        )
+        if call.tool == "write" and call.path:
+            take_claim(home, call.path, passport_id, agent=call.agent_hint)
+            if should_cow(call.path, home):
+                snapshot_file(home, call.path)
 
     if audit:
         audit_append(
@@ -179,6 +236,8 @@ def gate_call(
                 "mode": mode,
                 "agent": call.agent_hint,
                 "sessionId": call.session_id,
+                "ticket": risk.rule_key,
+                "envelope": env_name,
             },
         )
 
@@ -198,6 +257,26 @@ def gate_call(
 
     resp = hook_response(decision, reason)
     return GateResult(decision, reason, risk, asked, resp)
+
+
+def _surprise(call) -> bool:
+    """Allowed write whose real path is a secret or escaped the project."""
+    if call.tool != "write" or not call.path:
+        return False
+    if is_secret_path(call.path):
+        return False
+    root = call.workspace or call.cwd
+    try:
+        from pathlib import Path as P
+
+        real = str(P(call.path).resolve())
+    except OSError:
+        return False
+    if is_secret_path(real):
+        return True
+    if root and (not path_inside(real, root)) and path_inside(call.path, root):
+        return True
+    return False
 
 
 def gate_payload(raw: str | bytes | dict[str, Any], *, home: Path, **kwargs: Any) -> GateResult:

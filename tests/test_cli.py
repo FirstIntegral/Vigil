@@ -24,15 +24,19 @@ class CliTests(unittest.TestCase):
         self.assertIn("--yes", err.getvalue())
 
     def test_snapshot_schema(self) -> None:
-        buf = StringIO()
-        with patch("sys.stdout", buf):
-            rc = main(["snapshot"])
-        self.assertEqual(rc, 0)
-        data = json.loads(buf.getvalue())
-        self.assertEqual(data["schemaVersion"], 1)
-        self.assertEqual(data["pluginId"], "xyz.brwsk.vigil")
-        self.assertIsInstance(data["sessions"], list)
-        self.assertIn("agents", data["totals"])
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as tmp:
+            buf = StringIO()
+            with patch("sys.stdout", buf):
+                rc = main(["--home", tmp, "snapshot"])
+            self.assertEqual(rc, 0)
+            data = json.loads(buf.getvalue())
+            self.assertEqual(data["schemaVersion"], 1)
+            self.assertEqual(data["pluginId"], "xyz.brwsk.vigil")
+            self.assertIsInstance(data["sessions"], list)
+            self.assertIn("agents", data["totals"])
+            self.assertIn("lid", data)
 
 
 if __name__ == "__main__":

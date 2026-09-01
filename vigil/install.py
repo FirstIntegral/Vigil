@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from vigil import HOOK_TIMEOUT_SEC, PLUGIN_ID
+from vigil.house import skill_markdown
+from vigil.secure import write_private
 
 
 MARKER = "vigil gate"
@@ -120,7 +123,7 @@ def install(home: Path, helper: str) -> dict[str, str]:
     gpath = grok_hook_path(home)
     gpath.parent.mkdir(parents=True, exist_ok=True)
     doc = grok_hook_document(helper)
-    gpath.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    write_private(gpath, json.dumps(doc, indent=2) + "\n")
     written["grok"] = str(gpath)
 
     cpath = claude_settings_path(home)
@@ -135,9 +138,20 @@ def install(home: Path, helper: str) -> dict[str, str]:
         tmp = cpath.with_suffix(".tmp")
         tmp.write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
         tmp.replace(cpath)
+        try:
+            os.chmod(cpath, 0o600)
+        except OSError:
+            pass
         written["claude"] = str(cpath)
     else:
         written["claude"] = "skipped (no ~/.claude/settings.json)"
+    skill_dest = home / ".agents" / "skills" / "vigil" / "SKILL.md"
+    root = Path(helper).resolve().parent.parent
+    src = root / "skill" / "SKILL.md"
+    body = src.read_text(encoding="utf-8") if src.is_file() else skill_markdown()
+    skill_dest.parent.mkdir(parents=True, exist_ok=True)
+    skill_dest.write_text(body, encoding="utf-8")
+    written["skill"] = str(skill_dest)
     written["plugin"] = PLUGIN_ID
     written["helper"] = helper
     return written

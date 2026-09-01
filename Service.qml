@@ -33,6 +33,8 @@ Item {
   property var dossier: ({})
   property bool grokHook: false
   property bool claudeHook: false
+  property bool incident: false
+  property var lid: ({ enabled: true, locked: false, held: false })
   property var audit: []
   property string _stdout: ""
   property string _stderr: ""
@@ -48,12 +50,13 @@ Item {
   }
 
   readonly property string glyph: {
-    if (root.frozen || root.severity === "critical") return "󰀪"
+    if (root.incident || root.frozen || root.severity === "critical") return "󰀪"
     if (root.severity === "warning" || root.waitingCount > 0) return "󰀦"
     return "󰈈"
   }
   readonly property string barLabel: {
     if (!root.ready) return "…"
+    if (root.incident) return "INCIDENT"
     if (root.frozen) return "FROZEN"
     if (root.alertLine) {
       var line = root.alertLine
@@ -63,7 +66,7 @@ Item {
     if (root.mode === "ask") return "ask"
     return String(root.agentCount)
   }
-  readonly property bool alarming: root.waitingCount > 0 || root.frozen || root.severity === "critical"
+  readonly property bool alarming: root.waitingCount > 0 || root.frozen || root.severity === "critical" || root.incident
   readonly property bool hasAgents: root.agentCount > 0
   readonly property bool hooksLive: root.grokHook || root.claudeHook
 
@@ -113,6 +116,8 @@ Item {
       var hooks = data.hooks || {}
       grokHook = hooks.grok === true
       claudeHook = hooks.claude === true
+      incident = data.incident === true
+      lid = data.lid || { enabled: true, locked: false, held: false }
       sessionsRevision++
       var totals = data.totals || {}
       agentCount = Number(totals.agents) || sessions.length
@@ -121,7 +126,8 @@ Item {
       todayUsd = totals.todayUsd === undefined ? null : totals.todayUsd
       ready = true
       state = "ready"
-      if (frozen) message = "Frozen. Every tool call is denied."
+      if (incident) message = "Incident. Unlock does not unfreeze."
+      else if (frozen) message = "Frozen. Every tool call is denied."
       else if (waitingCount > 0) message = waitingCount + " approval" + (waitingCount === 1 ? "" : "s") + " waiting."
       else if (agentCount === 0) message = "No coding agents running."
       else message = ""
@@ -222,6 +228,24 @@ Item {
 
   function trustHour() {
     actionProc.command = [helperPath(), "trust", "60"]
+    actionProc.running = true
+  }
+
+  function cycleEnvelope(passportId) {
+    if (!passportId) return
+    actionProc.command = [helperPath(), "envelope", String(passportId), "cycle"]
+    actionProc.running = true
+  }
+
+  function rewindProject(rootPath) {
+    var args = [helperPath(), "rewind"]
+    if (rootPath) args.push("--root", String(rootPath))
+    actionProc.command = args
+    actionProc.running = true
+  }
+
+  function cycleLid() {
+    actionProc.command = [helperPath(), "lid", "cycle"]
     actionProc.running = true
   }
 

@@ -4,18 +4,24 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 from vigil import PLUGIN_ID, __version__
+from vigil.envelope import ENVELOPES, normalize as normalize_envelope
 from vigil.gate import gate_payload
 from vigil.install import install as install_hooks
 from vigil.install import uninstall as uninstall_hooks
 from vigil.kill import KillRefused, kill_agent
 from vigil.dossier import read_last_denied
-from vigil.pending import ACTIONS, list_pending, write_decision
+from vigil.lid import sync as lid_sync
+from vigil.passport import cycle_envelope, set_envelope
+from vigil.pending import ACTIONS, cleanup, list_pending, request_path, write_decision
+from vigil.principal import caller_is_agent
 from vigil.notify import ALERTS
 from vigil.policy import MODES, load_policy, save_policy
+from vigil.rewind import rewind
 from vigil.snapshot import collect, default_state_path, dumps, write_snapshot
 from vigil.validate import PluginInvalid, assert_valid
 
@@ -129,7 +135,40 @@ def cmd_decide(args: argparse.Namespace) -> int:
     if action not in ACTIONS:
         sys.stderr.write(f"vigil: unknown action {action!r}\n")
         return 2
-    path = write_decision(_home(args), args.id, action, source="cli")
+    if caller_is_agent():
+        sys.stderr.write("vigil: refuse decide from an agent process\n")
+        sys.stdout.write(json.dumps({"ok": False, "error": "agents cannot mint their own tickets"}) + "\n")
+        return 2
+    home = _home(args)
+    req = request_path(home, args.id)
+    kind = "tool"
+    try:
+        data = json.loads(req.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            kind = str(data.get("kind") or "tool")
+    except (OSError, json.JSONDecodeError):
+        data = {}
+    if kind in {"away", "surprise"}:
+        policy = load_policy(home)
+        if action in {"allow", "session", "always", "unfreeze"}:
+            policy.unfreeze()
+            save_policy(home, policy)
+        elif action == "rewind":
+            project = str((data or {}).get("cwd") or "")
+            result = rewind(home, project_root=project)
+            policy.unfreeze()
+            save_policy(home, policy)
+            cleanup(home, args.id)
+            sys.stdout.write(json.dumps({"ok": True, "id": args.id, "action": "rewind", "rewind": result}) + "\n")
+            return 0
+        # deny: stay frozen, dismiss the card
+        cleanup(home, args.id)
+        sys.stdout.write(
+            json.dumps({"ok": True, "id": args.id, "action": action, "kind": kind, "frozen": policy.effective_mode() == "frozen"})
+            + "\n"
+        )
+        return 0
+    path = write_decision(home, args.id, action, source="cli")
     sys.stdout.write(json.dumps({"ok": True, "id": args.id, "action": action, "path": str(path)}) + "\n")
     return 0
 
@@ -266,6 +305,72 @@ def cmd_uninstall(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_envelope(args: argparse.Namespace) -> int:
+    home = _home(args)
+    if not args.id:
+        sys.stdout.write(json.dumps({"ok": False, "error": "passport id required"}) + "\n")
+        return 2
+    if args.envelope == "cycle" or args.envelope is None:
+        row = cycle_envelope(home, args.id)
+    else:
+        row = set_envelope(home, args.id, args.envelope)
+    sys.stdout.write(json.dumps({"ok": True, "passport": row}) + "\n")
+    return 0
+
+
+def cmd_rewind(args: argparse.Namespace) -> int:
+    home = _home(args)
+    result = rewind(home, project_root=args.root or "")
+    sys.stdout.write(json.dumps(result) + "\n")
+    return 0
+
+
+def cmd_lid(args: argparse.Namespace) -> int:
+    home = _home(args)
+    policy = load_policy(home)
+    if args.action == "off":
+        policy.set_lid(False)
+        save_policy(home, policy)
+    elif args.action == "on":
+        policy.set_lid(True)
+        save_policy(home, policy)
+    elif args.action == "cycle":
+        policy.set_lid(not policy.lid)
+        save_policy(home, policy)
+    elif args.action == "sync":
+        state = lid_sync(home)
+        sys.stdout.write(json.dumps({"ok": True, **state}) + "\n")
+        return 0
+    sys.stdout.write(json.dumps({"ok": True, "lid": load_policy(home).lid}) + "\n")
+    return 0
+
+
+def cmd_spawn(args: argparse.Namespace) -> int:
+    """Record an envelope for a launch. Exec only with --exec."""
+    home = _home(args)
+    agent = args.agent
+    project = args.project or str(Path.cwd())
+    env = normalize_envelope(args.envelope)
+    from vigil.passport import upsert
+
+    paper = upsert(home, agent=agent, cwd=project, envelope=env)
+    plan = {
+        "ok": True,
+        "passport": paper,
+        "command": [agent],
+        "cwd": project,
+        "envelope": env,
+        "exec": bool(args.exec),
+        "note": "Landlock is not available from an Omarchy plugin. Envelope is a sticker the gate honours.",
+    }
+    if not args.exec:
+        sys.stdout.write(json.dumps(plan) + "\n")
+        return 0
+    os.chdir(project)
+    os.execvp(agent, [agent])
+    return 1  # pragma: no cover
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vigil",
@@ -342,6 +447,26 @@ def build_parser() -> argparse.ArgumentParser:
     uninst = sub.add_parser("uninstall", help="Remove Vigil hooks.")
     uninst.add_argument("--helper", default=None)
     uninst.set_defaults(func=cmd_uninstall)
+
+    env_p = sub.add_parser("envelope", help="seatbelt | project | hermit | desktop | read | cycle")
+    env_p.add_argument("id", help="Passport id")
+    env_p.add_argument("envelope", nargs="?", default="cycle", choices=list(ENVELOPES) + ["cycle"])
+    env_p.set_defaults(func=cmd_envelope)
+
+    rew = sub.add_parser("rewind", help="Restore git-tracked files this session touched.")
+    rew.add_argument("--root", default=None)
+    rew.set_defaults(func=cmd_rewind)
+
+    lid = sub.add_parser("lid", help="on | off | cycle | sync")
+    lid.add_argument("action", nargs="?", default="sync", choices=["on", "off", "cycle", "sync"])
+    lid.set_defaults(func=cmd_lid)
+
+    spawn = sub.add_parser("spawn", help="Stamp an envelope for a launch. --exec to exec.")
+    spawn.add_argument("agent")
+    spawn.add_argument("--project", default=None)
+    spawn.add_argument("--envelope", default="project")
+    spawn.add_argument("--exec", action="store_true")
+    spawn.set_defaults(func=cmd_spawn)
 
     return parser
 

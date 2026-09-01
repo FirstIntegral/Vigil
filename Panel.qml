@@ -26,6 +26,8 @@ Panel {
   readonly property var pending: service && service.pending ? service.pending : []
   readonly property string killStatus: service ? service.killStatus : ""
   readonly property bool pendingKill: service && (service.pendingKillPid > 0 || service.pendingKillAll)
+  readonly property bool incident: service ? service.incident === true : false
+  readonly property var lid: service && service.lid ? service.lid : ({})
 
   property int selectedIndex: 0
 
@@ -112,6 +114,18 @@ Panel {
     else if (t === "h" || t === "H") {
       if (root.service) root.service.trustHour()
     }
+    else if (t === "e" || t === "E") {
+      var row = root.selectedSession()
+      if (row && root.service) root.service.cycleEnvelope(row.passportId || row.id)
+    }
+    else if (t === "w" || t === "W") {
+      var row = root.selectedSession()
+      var cwd = row && row.cwd ? row.cwd : ""
+      if (root.service) root.service.rewindProject(cwd)
+    }
+    else if (t === "l" || t === "L") {
+      if (root.service) root.service.cycleLid()
+    }
     else if (t === "y" || t === "Y") {
       if (root.pending.length && root.service)
         root.service.decide(root.pending[0].id, "allow")
@@ -183,13 +197,15 @@ Panel {
             spacing: 0
 
             Text {
-              text: root.frozen
+              text: root.incident
+                ? "Incident"
+                : (root.frozen
                 ? "Frozen"
                 : (root.waitingCount > 0
                   ? (root.waitingCount + (root.waitingCount === 1 ? " waiting" : " waiting"))
                   : (root.agentCount === 0
                     ? "No agents"
-                    : (root.agentCount + (root.agentCount === 1 ? " agent" : " agents"))))
+                    : (root.agentCount + (root.agentCount === 1 ? " agent" : " agents")))))
               color: root.contentForeground
               font.family: root.contentFontFamily
               font.pixelSize: Style.fontPx(1.4)
@@ -202,10 +218,11 @@ Panel {
               text: {
                 if (!root.serviceReady) return "scanning…"
                 if (!root.hooksLive) return "hooks off · press i to arm"
+                if (root.incident) return "U unfreeze · W rewind · N stay frozen"
                 if (root.mode === "off") return "off · nothing is held · m cycles"
                 if (root.frozen) return "frozen · every tool call denied"
                 if (root.mode === "ask") return "ask · risky calls wait for you"
-                if (root.waitingCount > 0) return "Y allow · N deny"
+                if (root.waitingCount > 0) return "Y allow · N deny · A ticket"
                 return "seatbelt · deadly only · alerts:" + root.alert
               }
               color: Qt.darker(root.contentForeground, 1.4)
@@ -376,8 +393,11 @@ Panel {
                   var project = String(modelData.project || "")
                   var cwd = String(modelData.cwd || "")
                   var model = String(modelData.model || "")
+                  var envelope = String(modelData.envelope || "seatbelt")
                   var bits = []
                   if (project) bits.push(project)
+                  if (envelope && envelope !== "seatbelt") bits.push(envelope)
+                  else if (envelope) bits.push(envelope)
                   if (model) bits.push(model)
                   if (cwd && project !== cwd) bits.push(cwd)
                   bits.push(root.rssLabel(modelData.rssBytes))
@@ -472,6 +492,27 @@ Panel {
           }
           Text {
             text: "i arm hooks"
+            color: root.contentForeground
+            opacity: 0.4
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+          }
+          Text {
+            text: "e envelope"
+            color: root.contentForeground
+            opacity: 0.4
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+          }
+          Text {
+            text: "w rewind"
+            color: root.contentForeground
+            opacity: 0.4
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+          }
+          Text {
+            text: "l lid"
             color: root.contentForeground
             opacity: 0.4
             font.family: root.contentFontFamily

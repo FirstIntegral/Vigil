@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "id": "xyz.brwsk.vigil",
   "name": "Vigil",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "author": "Brusk Kawa Abdalla",
   "license": "MIT",
-  "description": "Seatbelt for coding agents. Default alert is the bar: a warning icon and 'Grok is trying to Y'. Optional Omarchy toasts. YOLO stays fast; deadly commands still stop. Trust 1h, panic freeze, black box.",
+  "description": "Constitution for Omarchy agents. Seatbelt by default. Tickets, papers, lid freeze, ghosts on the glass, rewind. Bar + toast. YOLO stays fast; deadly still stops.",
   "kinds": ["service", "bar-widget", "overlay"],
   "keepLoaded": true,
   "entryPoints": {
@@ -15,7 +15,7 @@
   },
   "barWidget": {
     "displayName": "Vigil",
-    "description": "Pending agent approvals, freeze, and a kill switch.",
+    "description": "Agent papers, pending cards, freeze, rewind, kill switch.",
     "category": "AI",
     "aliases": ["vigil", "agents", "kill-switch", "little-snitch"],
     "allowMultiple": false,

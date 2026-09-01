@@ -13,6 +13,7 @@ from vigil import POLICY_SCHEMA
 from vigil.notify import ALERTS, DEFAULT_ALERT
 from vigil.paths import policy_path, session_allow_path
 from vigil.risk import Risk
+from vigil.secure import write_private
 
 MODES = ("off", "seatbelt", "ask", "frozen")
 DEFAULT_MODE = "seatbelt"
@@ -37,6 +38,8 @@ class Policy:
     alert: str = DEFAULT_ALERT
     trust_until: str = ""
     trust_root: str = ""
+    lid: bool = True
+    lid_held: bool = False
 
     def effective_mode(self) -> str:
         if self.frozen or self.mode == "frozen":
@@ -66,6 +69,7 @@ class Policy:
 
     def unfreeze(self) -> None:
         restore = self.previous_mode if self.previous_mode in MODES and self.previous_mode != "frozen" else DEFAULT_MODE
+        self.lid_held = False
         self.set_mode(restore)
 
     def remember_allow(self, key: str) -> None:
@@ -104,6 +108,11 @@ class Policy:
         self.trust_until = ""
         self.trust_root = ""
 
+    def set_lid(self, enabled: bool) -> None:
+        self.lid = bool(enabled)
+        if not self.lid:
+            self.lid_held = False
+
     def is_trusted(self, cwd: str, now: datetime | None = None) -> bool:
         if not self.trust_until or not self.trust_root:
             return False
@@ -140,6 +149,8 @@ class Policy:
             "alert": self.alert if self.alert in ALERTS else DEFAULT_ALERT,
             "trustUntil": self.trust_until,
             "trustRoot": self.trust_root,
+            "lid": self.lid,
+            "lidHeld": self.lid_held,
             "allow": sorted(self.allow_keys),
             "deny": sorted(self.deny_keys),
         }
@@ -174,6 +185,8 @@ def load_policy(home: Path) -> Policy:
         alert=str(raw.get("alert") or DEFAULT_ALERT),
         trust_until=str(raw.get("trustUntil") or ""),
         trust_root=str(raw.get("trustRoot") or ""),
+        lid=raw.get("lid", True) is not False,
+        lid_held=raw.get("lidHeld") is True,
     )
     if policy.alert not in ALERTS:
         policy.alert = DEFAULT_ALERT
@@ -186,13 +199,5 @@ def load_policy(home: Path) -> Policy:
 
 
 def save_policy(home: Path, policy: Policy) -> None:
-    path = policy_path(home)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(policy.to_json(), indent=2) + "\n", encoding="utf-8")
-    tmp.replace(path)
-    sp = session_allow_path(home)
-    sp.parent.mkdir(parents=True, exist_ok=True)
-    stmp = sp.with_suffix(".tmp")
-    stmp.write_text(json.dumps(policy.session_json(), indent=2) + "\n", encoding="utf-8")
-    stmp.replace(sp)
+    write_private(policy_path(home), json.dumps(policy.to_json(), indent=2) + "\n")
+    write_private(session_allow_path(home), json.dumps(policy.session_json(), indent=2) + "\n")

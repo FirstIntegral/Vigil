@@ -27,3 +27,19 @@ def audit_path(home: Path) -> Path:
 
 def session_allow_path(home: Path) -> Path:
     return state_dir(home) / "session-allow.json"
+
+
+def passports_dir(home: Path) -> Path:
+    return state_dir(home) / "passports"
+
+
+def claims_path(home: Path) -> Path:
+    return state_dir(home) / "claims.json"
+
+
+def cow_dir(home: Path) -> Path:
+    return state_dir(home) / "cow"
+
+
+def chain_meta_path(home: Path) -> Path:
+    return state_dir(home) / "audit.chain"

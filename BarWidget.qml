@@ -109,6 +109,8 @@ BarWidget {
     tooltipText: {
       if (!root.service || !root.service.ready)
         return "Vigil · scanning"
+      if (root.service.incident)
+        return "Vigil · INCIDENT"
       if (root.service.frozen)
         return "Vigil · FROZEN · every tool call denied"
       if (root.service.alertLine)

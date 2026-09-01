@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from vigil.call import ToolCall
+from vigil.house import article_for
+from vigil.ticket import mcp_server, network_host, ticket_key
 
 # Hard deny = do not even ask. These destroy the machine or pipe the
 # internet into a shell. Overlay never sees them.
@@ -25,6 +27,9 @@ CRITICAL_CLASSES = frozenset(
         "chmod-root",
         "force-main",
         "power",
+        "desktop-kill",
+        "plugin-inject",
+        "self-approve",
     }
 )
 
@@ -40,6 +45,11 @@ class Risk:
     title: str
     reason: str
     rule_key: str
+    extra: str = ""
+    reversible: bool = True
+    hold: bool = False
+    blast: str = ""
+    article: str = ""
 
 
 _SECRET_NAMES = frozenset(
@@ -112,6 +122,27 @@ _POWER = re.compile(
 )
 _KILL = re.compile(r"\b(kill|killall|pkill)\b")
 _FIND_DELETE = re.compile(r"\bfind\b[^\n]*-delete", re.IGNORECASE)
+_HYPR_DEADLY = re.compile(
+    r"\bhyprctl\s+dispatch\s+(exit|killactive|killwindow|forcekillactive|exec)\b",
+    re.IGNORECASE,
+)
+_HYPR = re.compile(r"\bhyprctl\b", re.IGNORECASE)
+_PLUGIN_MUTATE = re.compile(
+    r"\bomarchy\s+plugin\s+(add|enable|disable|remove|update)\b",
+    re.IGNORECASE,
+)
+_SELF_APPROVE = re.compile(
+    r"\bvigil\s+decide\b|\.local/state/vigil|\.config/vigil|pending/\S+\.decision",
+    re.IGNORECASE,
+)
+_IDENTITY = re.compile(
+    r"\b(ssh-add|gpg\s+--(clearsign|sign|detach-sign)|gh\s+auth)\b",
+    re.IGNORECASE,
+)
+_OMARCHY_RESTART = re.compile(
+    r"\b(omarchy-restart|systemctl\s+--user\s+restart\s+omarchy)\b",
+    re.IGNORECASE,
+)
 
 
 def _collapse(command: str) -> str:
@@ -137,140 +168,248 @@ def _inside(path: str, root: str) -> bool:
     if not path or not root:
         return False
     try:
+        base = Path(root).resolve()
         resolved = Path(path)
         if not resolved.is_absolute():
-            resolved = Path(root) / resolved
-        base = Path(root).resolve()
-        # Don't require the file to exist.
+            resolved = base / resolved
         candidate = Path(os.path.normpath(str(resolved)))
+        if candidate.exists() or candidate.is_symlink():
+            candidate = candidate.resolve()
         return os.path.commonpath([str(candidate), str(base)]) == str(base)
     except (OSError, ValueError):
         return False
 
 
-def _rule_key(call: ToolCall, class_id: str) -> str:
-    body = call.command or call.path or call.tool
-    body = _collapse(body) if call.command else body
-    return f"{call.tool}:{class_id}:{body}"
+def path_inside(path: str, root: str) -> bool:
+    return _inside(path, root)
+
+
+def is_vigil_state(path: str) -> bool:
+    if not path:
+        return False
+    text = path.replace("\\", "/")
+    return "/.local/state/vigil" in text or text.endswith(".config/vigil") or "/.config/vigil/" in text
+
+
+def _rule_key(call: ToolCall, class_id: str, extra: str = "") -> str:
+    return ticket_key(call, class_id, extra)
+
+
+def _risk(
+    call: ToolCall,
+    decision: str,
+    class_id: str,
+    title: str,
+    reason: str,
+    extra: str = "",
+    reversible: bool = True,
+    blast: str = "",
+) -> Risk:
+    return Risk(
+        decision=decision,
+        class_id=class_id,
+        title=title,
+        reason=reason,
+        rule_key=_rule_key(call, class_id, extra),
+        extra=extra,
+        reversible=reversible,
+        hold=False,
+        blast=blast or (call.path or ""),
+        article=article_for(class_id),
+    )
 
 
 def classify(call: ToolCall) -> Risk:
+    if call.path and (is_secret_path(call.path) or is_vigil_state(call.path)) and call.tool == "write":
+        if is_vigil_state(call.path):
+            return _risk(
+                call,
+                DENY,
+                "self-approve",
+                "Rewrite Vigil's own state",
+                "Blocked. An agent cannot mint its own approval.",
+                reversible=False,
+                blast=call.path,
+            )
+        return _risk(
+            call,
+            ASK,
+            "secret-write",
+            "Write a secret file",
+            f"Agent wants to change {call.path}.",
+            extra=Path(call.path).name,
+            reversible=False,
+            blast=call.path,
+        )
+
     if call.tool in {"read", "grep", "list"}:
         if call.path and is_secret_path(call.path):
-            return Risk(
+            return _risk(
+                call,
                 ASK,
                 "secret-read",
                 "Read a secret file",
                 f"Agent wants to read {call.path}.",
-                _rule_key(call, "secret-read"),
+                extra=Path(call.path).name,
+                reversible=True,
+                blast=call.path,
             )
-        return Risk(
-            ALLOW,
-            "read",
-            "Read",
-            "Project read.",
-            _rule_key(call, "read"),
-        )
+        return _risk(call, ALLOW, "read", "Read", "Project read.")
 
     if call.tool == "write":
         path = call.path or ""
-        if is_secret_path(path):
-            return Risk(
-                ASK,
-                "secret-write",
-                "Write a secret file",
-                f"Agent wants to change {path}.",
-                _rule_key(call, "secret-write"),
-            )
         root = call.workspace or call.cwd
         if path and root and not _inside(path, root):
-            return Risk(
+            return _risk(
+                call,
                 ASK,
                 "write-outside",
                 "Write outside the project",
                 f"Agent wants to write {path}, which is outside {root}.",
-                _rule_key(call, "write-outside"),
+                extra=str(Path(path).parent),
+                blast=path,
             )
-        return Risk(
-            ALLOW,
-            "write",
-            "Edit project file",
-            "Write inside the project.",
-            _rule_key(call, "write"),
-        )
+        return _risk(call, ALLOW, "write", "Edit project file", "Write inside the project.", blast=path)
 
     if call.tool == "web":
-        return Risk(
+        host = network_host(call.summary)
+        return _risk(
+            call,
             ASK,
             "network",
             "Talk to the network",
             call.summary,
-            _rule_key(call, "network"),
+            extra=host,
+            reversible=False,
+            blast=host or call.summary,
         )
 
     if call.tool == "subagent":
-        return Risk(
+        return _risk(
+            call,
             ASK,
             "subagent",
             "Spawn another agent",
-            call.summary,
-            _rule_key(call, "subagent"),
+            call.summary + " Child starts with an empty session wallet.",
+            blast="child wallet empty",
         )
 
     if call.tool == "mcp":
-        return Risk(
+        server = mcp_server(call.raw_tool)
+        return _risk(
+            call,
             ASK,
             "mcp",
-            "Call an external tool",
+            f"Call {server or 'an external tool'}",
             f"{call.raw_tool}: {call.summary}",
-            _rule_key(call, "mcp"),
+            extra=server,
+            reversible=False,
+            blast=server or call.raw_tool,
         )
 
     if call.tool != "bash" or not call.command:
-        # Unknown tools get a human look, not a silent pass.
-        return Risk(
+        return _risk(
+            call,
             ASK,
             "unknown",
             f"Use {call.raw_tool or call.tool}",
             call.summary,
-            _rule_key(call, "unknown"),
         )
 
     cmd = _collapse(call.command)
 
+    if _SELF_APPROVE.search(cmd):
+        return _risk(
+            call,
+            DENY,
+            "self-approve",
+            "Self-approve",
+            "Blocked. An agent cannot answer its own card or rewrite Vigil.",
+            reversible=False,
+        )
     if _FORK_BOMB.search(cmd):
-        return Risk(DENY, "fork-bomb", "Fork bomb", "Blocked. This would hang the machine.", _rule_key(call, "fork-bomb"))
+        return _risk(call, DENY, "fork-bomb", "Fork bomb", "Blocked. This would hang the machine.", reversible=False)
     if _MKFS.search(cmd):
-        return Risk(DENY, "mkfs", "Format a disk", "Blocked. mkfs destroys disks.", _rule_key(call, "mkfs"))
+        return _risk(call, DENY, "mkfs", "Format a disk", "Blocked. mkfs destroys disks.", reversible=False)
     if _DD_DEV.search(cmd):
-        return Risk(DENY, "dd-device", "Raw write to a device", "Blocked. dd to /dev would destroy a disk.", _rule_key(call, "dd-device"))
+        return _risk(
+            call, DENY, "dd-device", "Raw write to a device", "Blocked. dd to /dev would destroy a disk.", reversible=False
+        )
     if _RM_RF_ROOT.search(cmd):
-        return Risk(DENY, "rm-root", "Delete the filesystem", "Blocked. Recursive delete of / or $HOME.", _rule_key(call, "rm-root"))
+        return _risk(
+            call, DENY, "rm-root", "Delete the filesystem", "Blocked. Recursive delete of / or $HOME.", reversible=False
+        )
     if _PIPE_SHELL.search(cmd):
-        return Risk(DENY, "pipe-shell", "Pipe the internet into a shell", "Blocked. curl|sh is how machines get owned.", _rule_key(call, "pipe-shell"))
+        return _risk(
+            call,
+            DENY,
+            "pipe-shell",
+            "Pipe the internet into a shell",
+            "Blocked. curl|sh is how machines get owned.",
+            reversible=False,
+        )
     if _CHMOD_ROOT.search(cmd):
-        return Risk(DENY, "chmod-root", "chmod 777 /", "Blocked.", _rule_key(call, "chmod-root"))
+        return _risk(call, DENY, "chmod-root", "chmod 777 /", "Blocked.", reversible=False)
     if _FORCE_MAIN.search(cmd):
-        return Risk(DENY, "force-main", "Force-push main", "Blocked. Force-push to main/master is not silent.", _rule_key(call, "force-main"))
+        return _risk(
+            call,
+            DENY,
+            "force-main",
+            "Force-push main",
+            "Blocked. Force-push to main/master is not silent.",
+            reversible=False,
+        )
+    if _HYPR_DEADLY.search(cmd) or _OMARCHY_RESTART.search(cmd):
+        return _risk(
+            call,
+            DENY,
+            "desktop-kill",
+            "Kill the compositor",
+            "Blocked. This would take down the Omarchy desktop.",
+            reversible=False,
+            blast="Hyprland / omarchy-shell",
+        )
+    if _PLUGIN_MUTATE.search(cmd):
+        return _risk(
+            call,
+            DENY,
+            "plugin-inject",
+            "Change an Omarchy plugin",
+            "Blocked. Plugin code runs inside omarchy-shell, unsandboxed.",
+            reversible=False,
+            blast="~/.config/omarchy/plugins",
+        )
     if _POWER.search(cmd):
-        return Risk(ASK, "power", "Power or disk command", cmd, _rule_key(call, "power"))
+        return _risk(
+            call,
+            DENY,
+            "power",
+            "Power or disk command",
+            "Blocked. Reboot, shutdown, and disk tools are not silent.",
+            reversible=False,
+        )
+    if _HYPR.search(cmd):
+        return _risk(call, ASK, "desktop", "Talk to Hyprland", cmd, reversible=False, blast="hyprctl")
+    if _IDENTITY.search(cmd):
+        return _risk(call, ASK, "identity", "Use a signing key", cmd, reversible=False)
     if _SUDO.search(cmd):
-        return Risk(ASK, "sudo", "Run as root", cmd, _rule_key(call, "sudo"))
+        return _risk(call, ASK, "sudo", "Run as root", cmd, reversible=False)
     if _GIT_FORCE.search(cmd):
-        return Risk(ASK, "git-force", "Force-push", cmd, _rule_key(call, "git-force"))
+        return _risk(call, ASK, "git-force", "Force-push", cmd, reversible=False)
     if _GIT_PUSH.search(cmd):
-        return Risk(ASK, "git-push", "git push", cmd, _rule_key(call, "git-push"))
+        return _risk(call, ASK, "git-push", "git push", cmd, extra=network_host(cmd), reversible=False)
     if _GIT_RESET_HARD.search(cmd):
-        return Risk(ASK, "git-reset", "git reset --hard", cmd, _rule_key(call, "git-reset"))
+        return _risk(call, ASK, "git-reset", "git reset --hard", cmd, reversible=False)
     if _RM_RF.search(cmd) or _FIND_DELETE.search(cmd):
-        return Risk(ASK, "destructive", "Recursive delete", cmd, _rule_key(call, "destructive"))
+        return _risk(call, ASK, "destructive", "Recursive delete", cmd, reversible=False)
     if _PKG.search(cmd):
-        return Risk(ASK, "packages", "Install packages", cmd, _rule_key(call, "packages"))
+        return _risk(call, ASK, "packages", "Install packages", cmd, reversible=False)
     if _NET.search(cmd):
-        return Risk(ASK, "network", "Network from the shell", cmd, _rule_key(call, "network"))
+        host = network_host(cmd)
+        return _risk(call, ASK, "network", "Network from the shell", cmd, extra=host, reversible=False, blast=host or cmd)
     if _KILL.search(cmd):
-        return Risk(ASK, "kill", "Signal a process", cmd, _rule_key(call, "kill"))
+        return _risk(call, ASK, "kill", "Signal a process", cmd)
     if _SAFE_BASH.match(cmd):
-        return Risk(ALLOW, "safe-bash", "Safe command", cmd, _rule_key(call, "safe-bash"))
+        return _risk(call, ALLOW, "safe-bash", "Safe command", cmd)
 
-    return Risk(ASK, "shell", "Run a shell command", cmd, _rule_key(call, "shell"))
+    return _risk(call, ASK, "shell", "Run a shell command", cmd)

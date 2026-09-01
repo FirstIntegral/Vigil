@@ -1,7 +1,7 @@
 # Vigil
 
 ## Overview
-Omarchy Quattro plugin: **seatbelt for coding agents**. Default mode lets YOLO run; only machine-killers get a polkit card. `ask` / `off` / `frozen` are explicit. Overlay uses `[polkit]` tokens + `BorderSurface`. Toasts go through `notify-send` so Omarchy's notification daemon paints them. Plugin id `xyz.brwsk.vigil`.
+Omarchy Quattro plugin: **constitution for coding agents**. Default mode lets YOLO run; only machine-killers get a polkit card. Tickets (not argv), passports, envelopes, lid-freeze, ghosts, rewind. Overlay uses `[polkit]` tokens + `BorderSurface`. Toasts go through `notify-send`. Plugin id `xyz.brwsk.vigil`.
 
 ## Stack / Conventions
 - Python 3.11+, stdlib only. Tests via `unittest`.
@@ -13,7 +13,11 @@ Omarchy Quattro plugin: **seatbelt for coding agents**. Default mode lets YOLO r
 - Gate must **never** return harness `ask` — YOLO auto-approves it. Hold the hook, then `allow` or `deny`.
 - Alerts default to **both** (Omarchy bar + Omarchy toast). `t` cycles bar / toast / both. Tests and `VIGIL_SILENT=1` never toast.
 - Ask timeout is deny. Hook timeout in install is 120s.
+- Always mints a **ticket** (`t:agent:project:class`), not the full command string.
+- Agents must not call `vigil decide` or write `~/.local/state/vigil`. Those are DENY-class.
+- State dirs `0700`, files `0600`. Audit is hash-chained and redacted. No cloud.
 - Do not `vigil install` into a live session without a way to answer pending cards.
+- Do not become herdr / omarchy.agents / omaharness. Lid on hands, not the hands.
 
 ## Commands
 - Build: none (no compile step)
@@ -23,6 +27,9 @@ Omarchy Quattro plugin: **seatbelt for coding agents**. Default mode lets YOLO r
 - Decide: `python3 bin/vigil decide <id> allow|deny|session|always|deny-always`
 - Arm hooks: `python3 bin/vigil install` (writes `~/.grok/hooks/vigil.json`)
 - Panic: `python3 bin/vigil panic --yes`
+- Envelope: `python3 bin/vigil envelope <id> project|hermit|desktop|read|seatbelt|cycle`
+- Rewind: `python3 bin/vigil rewind --root <project>`
+- Lid: `python3 bin/vigil lid on|off|cycle|sync`
 - On Omarchy: `omarchy plugin enable xyz.brwsk.vigil` then panel `i` to arm
 
 ## Repo

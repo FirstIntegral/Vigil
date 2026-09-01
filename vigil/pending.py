@@ -17,6 +17,7 @@ from typing import Any, Callable
 from vigil.call import ToolCall
 from vigil.paths import pending_dir
 from vigil.risk import Risk, severity_for
+from vigil.secure import ensure_private_dir, redact, redact_path, write_private
 
 AGENT_DISPLAY = {
     "grok": "Grok",
@@ -26,7 +27,7 @@ AGENT_DISPLAY = {
     "cursor-agent": "Cursor",
 }
 
-ACTIONS = frozenset({"allow", "session", "always", "deny", "deny-always"})
+ACTIONS = frozenset({"allow", "session", "always", "deny", "deny-always", "rewind", "unfreeze"})
 
 
 @dataclass(frozen=True)
@@ -55,9 +56,19 @@ def write_request(
     risk: Risk,
     created_at: str,
     expires_at: str,
+    envelope: str = "",
 ) -> Path:
+    from vigil.ghosts import ghosts_for
+
+    ghosts = ghosts_for(call)
+    blast = risk.blast or ""
+    if ghosts and not blast:
+        blast = f"{len(ghosts)} windows"
+    elif ghosts:
+        blast = f"{blast} · {len(ghosts)} windows"
     payload = {
         "id": req_id,
+        "kind": "tool",
         "createdAt": created_at,
         "expiresAt": expires_at,
         "agent": call.agent_hint,
@@ -66,34 +77,34 @@ def write_request(
         "workspace": call.workspace,
         "tool": call.tool,
         "rawTool": call.raw_tool,
-        "summary": call.summary,
-        "command": call.command,
-        "path": call.path,
+        "summary": redact(call.summary),
+        "command": redact(call.command or ""),
+        "path": redact_path(call.path or ""),
         "classId": risk.class_id,
         "title": risk.title,
         "reason": risk.reason,
         "ruleKey": risk.rule_key,
+        "ticket": risk.rule_key,
+        "article": risk.article,
+        "blast": blast,
+        "envelope": envelope,
+        "reversible": risk.reversible,
+        "ghosts": ghosts,
         "permissionMode": call.permission_mode,
     }
-    folder = pending_dir(home)
-    folder.mkdir(parents=True, exist_ok=True)
+    folder = ensure_private_dir(pending_dir(home))
     path = request_path(home, req_id)
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    tmp.replace(path)
+    write_private(path, json.dumps(payload, indent=2) + "\n")
     return path
 
 
 def write_decision(home: Path, req_id: str, action: str, source: str = "user") -> Path:
     if action not in ACTIONS:
         raise ValueError(f"unknown action {action!r}")
-    folder = pending_dir(home)
-    folder.mkdir(parents=True, exist_ok=True)
+    folder = ensure_private_dir(pending_dir(home))
     path = decision_path(home, req_id)
     payload = {"id": req_id, "action": action, "source": source}
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(payload) + "\n", encoding="utf-8")
-    tmp.replace(path)
+    write_private(path, json.dumps(payload) + "\n")
     return path
 
 
@@ -146,6 +157,66 @@ def list_pending(home: Path) -> list[dict[str, Any]]:
         if isinstance(data, dict) and data.get("id"):
             rows.append(decorate(data))
     return rows
+
+
+def write_away(home: Path) -> Path:
+    """While-you-were-out card. Not a tool-call wait."""
+    req_id = "away-" + new_id()[:12]
+    from vigil.dossier import summarize
+
+    dossier = summarize(home)
+    counts = dossier.get("counts") or {}
+    files = dossier.get("files") or []
+    payload = {
+        "id": req_id,
+        "kind": "away",
+        "createdAt": "",
+        "expiresAt": "",
+        "agent": "vigil",
+        "title": "While you were out",
+        "reason": "The seat locked. Agents were frozen. Unlock does not unfreeze them.",
+        "summary": f"{counts.get('tools') or 0} tools today · {len(files)} files touched",
+        "classId": "lid",
+        "barLine": "Vigil · while you were out",
+        "blast": " · ".join(files[-4:]) if files else "no files logged",
+        "article": "",
+        "ghosts": [],
+        "ticket": "",
+        "cwd": "",
+        "command": "",
+        "path": "",
+        "reversible": True,
+    }
+    ensure_private_dir(pending_dir(home))
+    path = request_path(home, req_id)
+    write_private(path, json.dumps(payload, indent=2) + "\n")
+    return path
+
+
+def write_surprise(home: Path, *, summary: str, path: str, agent: str) -> Path:
+    req_id = "surprise-" + new_id()[:12]
+    payload = {
+        "id": req_id,
+        "kind": "surprise",
+        "agent": agent,
+        "title": "This agent wrote somewhere it should not",
+        "reason": "The call was allowed. The file that landed is a secret or outside the project.",
+        "summary": redact(summary),
+        "path": redact_path(path),
+        "classId": "surprise",
+        "barLine": "Vigil · incident",
+        "blast": redact_path(path),
+        "article": "",
+        "ghosts": [],
+        "ticket": "",
+        "cwd": "",
+        "command": "",
+        "reversible": False,
+    }
+    ensure_private_dir(pending_dir(home))
+    dest = request_path(home, req_id)
+    write_private(dest, json.dumps(payload, indent=2) + "\n")
+    return dest
 
 
 def wait_for_decision(

@@ -84,6 +84,20 @@ Restart the agent session so the hook actually loads. Left-click the eye in the 
 
 Do not arm hooks in a session you still need unblocked unless the overlay (or `vigil decide` from a **human** terminal) is ready to answer cards.
 
+### First run checklist
+
+Do this on Omarchy, not on Ubuntu.
+
+1. Confirm GitHub SSH works: `ssh -T git@github.com`
+2. Add and enable the plugin (command above).
+3. Press `i` in the Vigil panel, or run the `install` command above.
+4. Quit and restart Grok / Claude Code / whichever agent you use, so it picks up the hook.
+5. Run something harmless (`pytest` in a project). Nothing should pop up.
+6. Ask the agent to run `rm -rf /` (or any other deadly call). You should get the polkit card, a bar warning, and a toast. Deny it.
+7. Lock the session. Agents should freeze. Unlock. They should stay frozen until you press `U`.
+
+If step 6 never appears, the hook did not load — restart the agent and check that `~/.grok/hooks/vigil.json` (or Claude `settings.json`) exists.
+
 | Key | Action |
 | --- | --- |
 | `Y` / Enter | Allow this call once |

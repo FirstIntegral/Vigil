@@ -45,6 +45,11 @@
 - **Rejected:** becoming herdr / omarchy.agents / omaharness; Landlock as v1 (plugin has no sudo); a bar pet; kernel LSM as the product; auto-unfreeze on unlock (lid holds until a human key); Always inheriting as a command regex (that was a lie).
 - Landlock / Rust gate stay later. OpenCode/Codex install still unwired. Cooperative hooks stay the honest limitation.
 
+## 2026-09-02 Omarchy handoff lives in tracked files
+- User continues from an Omarchy machine. `session_compact.md` / `session_transcript.md` are gitignored on purpose, so a clone will not have them.
+- **Decision:** the resume steps live in `AGENTS.md` (`## Continue here (Omarchy)`) and the README first-run checklist. A fresh session on Omarchy reads those plus `docs/DECISIONS.md`.
+- **Rejected:** committing session files (privacy rule); a separate CONTINUE.md (two files already cover human + AI).
+
 ## 2026-09-02 README and card copy in full sentences
 - User: compact lines like "Everything. Panic, or the lid." are hard to read. Make the writing a bit longer, simple, easy to understand — not only that line, everything else.
 - **Decision:** GitHub README, plugin description, house-law skill, overlay/panel status lines, and away/incident card copy use complete sentences. Keyboard legends on the card stay one line (Omarchy polkit density). ADR log stays terse (it is for tools, not strangers).

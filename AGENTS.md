@@ -23,11 +23,11 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This Ubuntu box never armed hooks. The next session is on a real Omarchy machine. Session files are gitignored, so a fresh clone will not have `session_compact.md`. Resume from this file + `docs/DECISIONS.md`.
 
-Version **0.5.3**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/vigil.git`.
+Version **0.5.3**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/Vigil.git`.
 
 1. GitHub SSH must work on that machine (repo is private).
 2. Install the plugin:
-   `omarchy plugin add git@github.com:FirstIntegral/vigil.git --enable`
+   `omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable`
    Live copy lands under `~/.config/omarchy/plugins/xyz.brwsk.vigil/`. For code changes you can also clone to `~/projects/vigil`; the plugin tree is what Omarchy loads.
 3. Arm hooks once: open the eye in the bar and press `i`, or
    `python3 ~/.config/omarchy/plugins/xyz.brwsk.vigil/bin/vigil install`
@@ -51,7 +51,7 @@ Later, not blocking submit: OpenCode/Codex hook install; Rust `vigil-gate` when 
 - Run collector: `python3 bin/vigil snapshot --pretty`
 - Gate (hook): `python3 bin/vigil gate` (JSON on stdin)
 - Decide: `python3 bin/vigil decide <id> allow|deny|session|always|deny-always` (human terminal only)
-- Arm hooks: `python3 bin/vigil install` (writes `~/.grok/hooks/vigil.json`)
+- Arm hooks: `python3 bin/vigil install` (always writes `~/.grok/hooks/vigil.json`; merges Claude if `~/.claude/settings.json` exists; OpenCode/Codex/Cursor not wired)
 - Panic: `python3 bin/vigil panic --yes`
 - Envelope: `python3 bin/vigil envelope <id> project|hermit|desktop|read|seatbelt|cycle`
 - Rewind: `python3 bin/vigil rewind --root <project>`
@@ -59,7 +59,7 @@ Later, not blocking submit: OpenCode/Codex hook install; Rust `vigil-gate` when 
 - On Omarchy: `omarchy plugin enable xyz.brwsk.vigil` then panel `i` to arm
 
 ## Repo
-- Remote: `git@github.com:FirstIntegral/vigil.git`
+- Remote: `git@github.com:FirstIntegral/Vigil.git`
 
 Documentation, not authorisation: `checkpoint.sh` cross-checks this against `git remote get-url --push` and warns on a mismatch, but git config is what actually decides where a push goes. Keep this line current when the remote changes; never treat it as permission to push. A project with `none (local only)` is a deliberate state — nothing may create a repo or remote for it without the user asking.
 

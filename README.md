@@ -67,13 +67,13 @@ Press `m` to cycle. There are four global modes:
 ## Install (Omarchy only)
 
 ```
-omarchy plugin add https://github.com/FirstIntegral/vigil.git --enable
+omarchy plugin add https://github.com/FirstIntegral/Vigil.git --enable
 ```
 
 If the GitHub repository is still private, clone over SSH instead:
 
 ```
-omarchy plugin add git@github.com:FirstIntegral/vigil.git --enable
+omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable
 ```
 
 Then arm the hooks once. Either:
@@ -87,6 +87,47 @@ or open the bar panel and press `i`.
 Restart the agent session so the hook actually loads. Left-click the eye in the bar.
 
 Do not arm hooks in a session you still need unblocked unless the overlay (or `vigil decide` from a **human** terminal) is ready to answer cards.
+
+## Harnesses
+
+Vigil does two different jobs. Do not mix them up.
+
+**The bar sees processes.** It matches `comm`, the executable basename, and argv0 only — never later arguments, so `pgrep -af claude` is not an agent. The names are Omarchy’s default-agent list plus Cursor. `pi` is omitted on purpose; that name is too generic.
+
+| Binary | Shown as |
+| --- | --- |
+| `grok` | Grok |
+| `claude` | Claude Code |
+| `opencode` | OpenCode |
+| `codex` | Codex |
+| `cursor-agent` | Cursor |
+| `copilot` | Copilot CLI |
+| `crush` | Crush |
+| `agy` | Antigravity |
+| `hermes` | Hermes |
+| `ori` | Ori |
+
+The bar lists these processes. Panic sends SIGTERM to every one of them. Lid freeze is a *gate* mode: only a hooked harness stops; an unhooked OpenCode pane keeps working while the screen is locked. A process Vigil does not name is invisible here: ChatGPT in a browser, Gemini, a Cursor GUI with no `cursor-agent` binary, and anything else.
+
+**The seatbelt sits on a hook.** That is a PreToolUse / PostToolUse command the *harness* has to load. `vigil install` (panel `i`) writes only these:
+
+| Harness | What `install` does |
+| --- | --- |
+| Grok | Always writes `~/.grok/hooks/vigil.json`. PreToolUse timeout is 120 seconds, PostToolUse is 5 seconds. Grok hooks fail *open* if the file is missing, the command crashes, or the timeout fires — Vigil denies the call before that 120 seconds. |
+| Claude Code | Merges the same `vigil gate` command into `~/.claude/settings.json` **if that file already exists**. It does not create Claude settings from scratch. |
+| OpenCode | Not wired. |
+| Codex | Not wired. |
+| Cursor, Copilot CLI, Crush, Antigravity, Hermes, Ori | Not wired. |
+
+Install also copies the house-law skill to `~/.agents/skills/vigil/SKILL.md`. That is a reminder the agent can read. It is not a hook.
+
+Restart the agent after install. Grok and Claude Code only load hook files at session start.
+
+The gate JSON is Grok camelCase (`toolName`, `hookEventName`, `toolInput`) and Claude snake_case (`tool_name`, `hook_event_name`, `tool_input`). If another harness already posted that shape to `python3 bin/vigil gate`, the classifier would run. Nothing in `install` makes OpenCode, Codex, or Cursor do that.
+
+**What this means in practice.** An OpenCode pane can show up in the bar, and Panic can kill it. Until OpenCode’s hook is wired, its tool calls are not held. Same for Codex and the rest. Unhooked YOLO is unguarded YOLO.
+
+`vigil uninstall` deletes the Grok hook file and strips Vigil’s lines from Claude settings. It does not touch other harnesses, because it never wrote them.
 
 ## Remove
 
@@ -121,7 +162,7 @@ Do this on Omarchy, not on Ubuntu.
 1. Confirm GitHub SSH works: `ssh -T git@github.com`
 2. Add and enable the plugin (command above).
 3. Press `i` in the Vigil panel, or run the `install` command above.
-4. Quit and restart Grok / Claude Code / whichever agent you use, so it picks up the hook.
+4. Quit and restart Grok or Claude Code (the only harnesses `install` arms today) so the hook actually loads. OpenCode, Codex, and the others are listed in the bar but are not hooked yet — see [Harnesses](#harnesses).
 5. Run something harmless (`pytest` in a project). Nothing should pop up.
 6. From a **human** terminal, not from an agent:
 
@@ -135,7 +176,7 @@ Do this on Omarchy, not on Ubuntu.
 
 Do **not** ask an agent to delete `/` or `$HOME` to test this. Grok hooks fail *open* if the hook is missing, crashes, or times out. GNU `rm` may refuse `rm -rf /` without `--no-preserve-root`, but that is not a seatbelt. The drill is.
 
-If step 6 never appears, check that `~/.grok/hooks/vigil.json` (or Claude `settings.json`) exists. If step 7 never appears, restart the agent so it loads that file.
+If step 6 never appears, check that `~/.grok/hooks/vigil.json` exists (and Claude `~/.claude/settings.json` if you are proving Claude). If step 7 never appears, restart that agent so it loads the file. Proving the hook with OpenCode or Codex will not work until those installs exist.
 
 | Key | Action |
 | --- | --- |
@@ -173,7 +214,7 @@ Vigil is a **consent UI on the hooked path**. It is not a jail, a sandbox, or a 
 
 **Claims are advisory.** Agents that bypass tools can still stomp the same file.
 
-**OpenCode / Codex hooks are not wired yet.** The gate already understands generic envelopes. `install` currently writes Grok hooks, and Claude hooks if `~/.claude/settings.json` exists.
+**Unhooked harnesses are not seated.** The bar can still list OpenCode, Codex, Cursor, and the rest. Panic can still kill those processes. Their tool calls are not held. See [Harnesses](#harnesses).
 
 **QML is Omarchy-only.** This tree is not a generic Linux daemon. Do not expect it to run as a service on Ubuntu or another distro.
 

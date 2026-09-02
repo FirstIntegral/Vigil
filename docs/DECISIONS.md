@@ -89,3 +89,13 @@
 - User: README told people to ask an agent to run a recursive delete of `/`. If the hook is missing, Grok hooks fail open. GNU `rm --preserve-root` is not a product guarantee.
 - **Decision:** `vigil prove` classifies deadly samples in-process (no exec) and mints a card for the sentinel `vigil-glass-proof`. That sentinel is DENY-class; if it ever reaches a shell it is command-not-found. First-run and AGENTS.md never tell anyone to delete `/` to test. License remains MIT (compatible with Omarchy and the marketplace).
 - **Rejected:** keeping the deadly first-run step; relying on GNU preserve-root; a dry-run flag on `rm`.
+
+## 2026-09-02 README documents harness census vs hook install
+- User asked which AI tools Vigil supports, then to put harnesses and hook install on the GitHub README.
+- **Decision:** README gets a **Harnesses** section with two tables: ten process binaries the bar lists and Panic can SIGTERM, and what `vigil install` actually writes (Grok always, Claude only if `~/.claude/settings.json` exists, OpenCode/Codex/Cursor/Copilot/Crush/Antigravity/Hermes/Ori not wired). Lid freeze is called out as gate-only. Limitations keeps one line and points at that section. First-run checklist says only Grok and Claude get hooks today.
+- **Rejected:** implying every Omarchy agent is seated; calling the gate “generic envelopes” without naming the two JSON shapes; listing `pi`.
+
+## 2026-09-02 GitHub repo display name is Vigil
+- User renamed `FirstIntegral/vigil` → `FirstIntegral/Vigil` on GitHub (still private). Clone URLs are case-insensitive; GitHub's canonical SSH is now `git@github.com:FirstIntegral/Vigil.git`.
+- **Decision:** `origin` and tracked clone lines (`AGENTS.md` `## Repo`, README install) use that casing. Local directory stays `~/projects/vigil`. Plugin id stays `xyz.brwsk.vigil`.
+- **Rejected:** renaming the local folder or the plugin id; treating the GitHub title as a new product.

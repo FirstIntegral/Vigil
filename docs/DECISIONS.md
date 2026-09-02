@@ -50,6 +50,11 @@
 - **Decision:** the resume steps live in `AGENTS.md` (`## Continue here (Omarchy)`) and the README first-run checklist. A fresh session on Omarchy reads those plus `docs/DECISIONS.md`.
 - **Rejected:** committing session files (privacy rule); a separate CONTINUE.md (two files already cover human + AI).
 
+## 2026-09-02 GitHub SSH uses the xigmatic linux key
+- This ThinkPad's `id_rsa` (`brwsk@thinkpad`) is not on GitHub. The account already has the desktop key `brwsk@xigmatic`.
+- **Decision:** `~/.ssh/id_ed25519` is that key. `Host github.com` uses it with `IdentitiesOnly yes`. ThinkPad `id_rsa` stays only for `polygonrizz-vps`. Vigil `origin` is `git@github.com:FirstIntegral/vigil.git`.
+- **Rejected:** uploading the ThinkPad rsa as a new GitHub user key; a vigil-only deploy key; rewriting `git@` to HTTPS.
+
 ## 2026-09-02 Omarchy test isolation
 - First run of `scripts/test.sh` on this Omarchy box failed two fixtures written on Ubuntu: rewind's `git commit` inherited global `commit.gpgsign` and popped pinentry; `test_empty_without_hyprctl` did not stub `hyprctl` and listed the live foot window as a ghost.
 - **Decision:** fixture repos set local `commit.gpgsign`/`tag.gpgsign` false (test isolation, not a signing bypass). Ghosts test patches `shutil.which` to `None`.

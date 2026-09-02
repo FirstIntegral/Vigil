@@ -33,6 +33,32 @@ class LidTests(unittest.TestCase):
             self.assertTrue(any(row.get("kind") == "away" for row in pending))
             self.assertEqual(load_policy(home).effective_mode(), "frozen")
 
+    def test_omarchy_shell_islocked_true(self) -> None:
+        from vigil.lid import _omarchy_locked
+
+        done = subprocess.CompletedProcess(
+            ["omarchy-shell", "lock", "isLocked"], 0, "true\n", ""
+        )
+        with patch("vigil.lid.shutil.which", return_value="/usr/bin/omarchy-shell"):
+            with patch("vigil.lid.subprocess.run", return_value=done):
+                self.assertTrue(_omarchy_locked())
+
+    def test_omarchy_shell_islocked_false(self) -> None:
+        from vigil.lid import _omarchy_locked
+
+        done = subprocess.CompletedProcess(
+            ["omarchy-shell", "lock", "isLocked"], 0, "false\n", ""
+        )
+        with patch("vigil.lid.shutil.which", return_value="/usr/bin/omarchy-shell"):
+            with patch("vigil.lid.subprocess.run", return_value=done):
+                self.assertFalse(_omarchy_locked())
+
+    def test_omarchy_shell_missing(self) -> None:
+        from vigil.lid import _omarchy_locked
+
+        with patch("vigil.lid.shutil.which", return_value=None):
+            self.assertFalse(_omarchy_locked())
+
 
 class ClaimTests(unittest.TestCase):
     def test_other_passport_conflicts(self) -> None:

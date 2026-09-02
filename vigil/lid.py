@@ -17,6 +17,27 @@ from vigil.policy import load_policy, save_policy
 from vigil.secure import write_private
 
 
+def _omarchy_locked() -> bool:
+    """Omarchy's locker is Quickshell ext-session-lock, not hyprlock.
+
+    `loginctl LockedHint` stays no. Ask the lock plugin.
+    """
+    helper = shutil.which("omarchy-shell")
+    if not helper:
+        return False
+    try:
+        out = subprocess.run(
+            [helper, "lock", "isLocked"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=0.4,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return (out.stdout or "").strip().lower() == "true"
+
+
 def is_locked(probe: Callable[[], bool] | None = None) -> bool:
     if probe is not None:
         return bool(probe())
@@ -27,6 +48,8 @@ def is_locked(probe: Callable[[], bool] | None = None) -> bool:
         return True
     if flag in {"0", "false", "no"}:
         return False
+    if _omarchy_locked():
+        return True
     session = os.environ.get("XDG_SESSION_ID") or "self"
     loginctl = shutil.which("loginctl")
     if loginctl:

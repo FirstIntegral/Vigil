@@ -58,7 +58,7 @@ Press `m` to cycle. There are four global modes:
 
 **ask.** Seatbelt plus every risky call (network, sudo, git push, writes outside the project, and so on). This is Little Snitch mode.
 
-**frozen.** Every tool call is denied until you unfreeze. You get here by pressing Panic, or by locking the screen while the lid is on. Unlocking the screen does not leave this mode.
+**frozen.** Every tool call is denied until you unfreeze. You get here by pressing Panic, or by locking the screen while the lid is on. Unlocking the screen does not leave this mode. On Omarchy the lid watches `omarchy.lock` (`omarchy-shell lock isLocked`), not hyprlock.
 
 **Alerts** default to **both**: a bar glyph plus a short line like `Grok is trying to rm -rf /`, and a native Omarchy toast. Press `t` to cycle `bar` / `toast` / `both`.
 

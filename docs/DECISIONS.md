@@ -64,3 +64,8 @@
 - User: compact lines like "Everything. Panic, or the lid." are hard to read. Make the writing a bit longer, simple, easy to understand — not only that line, everything else.
 - **Decision:** GitHub README, plugin description, house-law skill, overlay/panel status lines, and away/incident card copy use complete sentences. Keyboard legends on the card stay one line (Omarchy polkit density). ADR log stays terse (it is for tools, not strangers).
 - **Rejected:** leaving the README in telegram fragments; turning the overlay key row into paragraphs (it would overflow the card).
+
+## 2026-09-02 Lid watches omarchy.lock IPC, not hyprlock
+- Glass proof: `omarchy system lock` engaged Quickshell ext-session-lock (`omarchy-shell lock isLocked` → true, `sessionLocked`/`secure` true). `loginctl LockedHint` stayed no. No `hyprlock`/`swaylock`/`gtklock` process. Vigil never froze; unlock stamped no away card.
+- **Decision:** `is_locked()` asks `omarchy-shell lock isLocked` first. Keep loginctl + hyprlock/swaylock/gtklock as fallbacks. Still do not clone `omarchy.lock`.
+- **Rejected:** treating hyprlock as Omarchy's locker; writing our own lock screen; polling `/proc` for `qs`.

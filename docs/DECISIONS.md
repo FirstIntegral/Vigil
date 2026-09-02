@@ -99,3 +99,8 @@
 - User renamed `FirstIntegral/vigil` → `FirstIntegral/Vigil` on GitHub (still private). Clone URLs are case-insensitive; GitHub's canonical SSH is now `git@github.com:FirstIntegral/Vigil.git`.
 - **Decision:** `origin` and tracked clone lines (`AGENTS.md` `## Repo`, README install) use that casing. Local directory stays `~/projects/vigil`. Plugin id stays `xyz.brwsk.vigil`.
 - **Rejected:** renaming the local folder or the plugin id; treating the GitHub title as a new product.
+
+## 2026-09-02 Do not skip Vigil when the harness is YOLO
+- User asked if Vigil could skip its card after Claude (or any tool) is set to bypass / always-approve. Then: keep everything as is.
+- **Decision:** Gate still ignores `permissionMode`. YOLO / `bypassPermissions` / OpenCode `"*" = allow` is why the overlay exists. Hook runs before the harness prompt, so a per-command Yes from Claude cannot suppress Vigil on that same call. 1config on this box already YOLO’s all three tools; skipping Vigil there would mean no card.
+- **Rejected:** treating harness bypass as a per-command allow; deferring deadly holds to Claude’s UI; a split mode (Claude asks for risky, Vigil only for deadly).

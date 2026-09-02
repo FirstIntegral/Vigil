@@ -50,6 +50,11 @@
 - **Decision:** the resume steps live in `AGENTS.md` (`## Continue here (Omarchy)`) and the README first-run checklist. A fresh session on Omarchy reads those plus `docs/DECISIONS.md`.
 - **Rejected:** committing session files (privacy rule); a separate CONTINUE.md (two files already cover human + AI).
 
+## 2026-09-02 Omarchy test isolation
+- First run of `scripts/test.sh` on this Omarchy box failed two fixtures written on Ubuntu: rewind's `git commit` inherited global `commit.gpgsign` and popped pinentry; `test_empty_without_hyprctl` did not stub `hyprctl` and listed the live foot window as a ghost.
+- **Decision:** fixture repos set local `commit.gpgsign`/`tag.gpgsign` false (test isolation, not a signing bypass). Ghosts test patches `shutil.which` to `None`.
+- **Rejected:** disabling global gpgsign; asserting empty ghosts on a live Hyprland session.
+
 ## 2026-09-02 README and card copy in full sentences
 - User: compact lines like "Everything. Panic, or the lid." are hard to read. Make the writing a bit longer, simple, easy to understand — not only that line, everything else.
 - **Decision:** GitHub README, plugin description, house-law skill, overlay/panel status lines, and away/incident card copy use complete sentences. Keyboard legends on the card stay one line (Omarchy polkit density). ADR log stays terse (it is for tools, not strangers).

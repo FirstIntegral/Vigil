@@ -4,6 +4,7 @@ import subprocess
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from vigil.claims import claim, conflict
 from vigil.lid import sync
@@ -52,6 +53,9 @@ class RewindTests(unittest.TestCase):
             subprocess.run(["git", "init"], cwd=root, check=True, capture_output=True)
             subprocess.run(["git", "config", "user.email", "t@t"], cwd=root, check=True, capture_output=True)
             subprocess.run(["git", "config", "user.name", "t"], cwd=root, check=True, capture_output=True)
+            # Fixture repo only — isolate from global commit.gpgsign / pinentry.
+            subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=root, check=True, capture_output=True)
+            subprocess.run(["git", "config", "tag.gpgsign", "false"], cwd=root, check=True, capture_output=True)
             f = root / "a.txt"
             f.write_text("one\n", encoding="utf-8")
             subprocess.run(["git", "add", "a.txt"], cwd=root, check=True, capture_output=True)
@@ -111,4 +115,5 @@ class GhostsTests(unittest.TestCase):
             agent_hint="grok",
             raw_input={},
         )
-        self.assertEqual(ghosts_for(call), [])
+        with patch("vigil.ghosts.shutil.which", return_value=None):
+            self.assertEqual(ghosts_for(call), [])

@@ -46,6 +46,7 @@ Later, not blocking submit: OpenCode/Codex hook install; Rust `vigil-gate` when 
 ## Commands
 - Build: none (no compile step)
 - Test: `bash scripts/test.sh` (unittest + `vigil validate`)
+- Bench: `python3 scripts/bench.py` (gate/snapshot spawn + live RSS; writes JSON to stdout)
 - Run collector: `python3 bin/vigil snapshot --pretty`
 - Gate (hook): `python3 bin/vigil gate` (JSON on stdin)
 - Decide: `python3 bin/vigil decide <id> allow|deny|session|always|deny-always` (human terminal only)

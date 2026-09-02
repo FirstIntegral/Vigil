@@ -203,6 +203,40 @@ These wait for you in seatbelt (and are denied if you do not answer):
 
 Everything else that looks risky waits in **ask** mode, and passes in **seatbelt**. Envelope `project` also holds writes outside that repo. Envelope `hermit` holds network and MCP. Envelope `read` holds writes.
 
+## Cost
+
+Vigil does not start a second daemon. The bar, overlay, and panel are QML inside `omarchy-shell` (`keepLoaded`). The extra always-on work is one short-lived `python3 bin/vigil snapshot` every `refreshIntervalSec` (default **2 s**). Each hooked tool call also spawns `python3 bin/vigil gate`, which then exits.
+
+Those spawns are the cost. Classification itself is a regex. There is no language model on the yes-path.
+
+Measured 2026-09-02 on this machine: ThinkPad E14 Gen 4, 12th Gen Intel Core i7-1255U (12 threads), 16 GB RAM, Python 3.14.7, Linux 7.1.9-arch1-2. Re-run with `python3 scripts/bench.py` (`n=40` spawns, `n=200` in-process; median and p95).
+
+| Path | Median | p95 | Peak RSS | Lives |
+| --- | --- | --- | --- | --- |
+| `vigil snapshot` (one spawn) | 109 ms | 115 ms | 62 MiB | ~0.1 s, then exits |
+| `vigil gate` allow (one spawn, `pytest`) | 62 ms | 74 ms | 23 MiB | ~0.06 s, then exits |
+| `gate` in-process (same allow path) | 0.10 ms | 0.25 ms | (caller) | n/a |
+
+At the default 2 s poll that is about **5% of one core** for snapshot (`109 ms / 2 s`). At 1 s it would be about 11%. The Python process is not resident: it peaks, then goes away. Raise the interval in the widget settings (1–30 s) if you want it quieter.
+
+Same machine, other processes that *stay* in RAM (RSS at the same moment):
+
+| Process | RSS | Notes |
+| --- | --- | --- |
+| Grok | 621 MiB | the agent Vigil is seating |
+| quickshell / omarchy-shell | 410 MiB | whole bar + notifications + **all** plugins, including Vigil’s QML |
+| Hyprland | 184 MiB | compositor |
+| proton.vpn.daemon | 107 MiB | Python, always on |
+| OpenTabletDrive | 65 MiB | always on |
+| udiskie | 62 MiB | Python, always on |
+| foot | 33 MiB | one terminal |
+| Vigil snapshot (peak) | 62 MiB | not always on; matches udiskie’s *size* for a tenth of a second |
+| Vigil gate (peak) | 23 MiB | per tool call, then gone |
+
+In general: a Python 3 cold start is tens of milliseconds and tens of MiB. That is normal for a stdlib CLI, and cheap next to Grok or the shell. It is heavier than a tiny Rust hook would be (planned; not measured here). It is lighter than keeping another 60–100 MiB Python daemon resident all day.
+
+quickshell’s own CPU while Vigil was polling was **0.7% of one core** over 3 s. The snapshot child is the burst.
+
 ## Tests
 
 ```

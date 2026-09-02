@@ -79,3 +79,8 @@
 - User liked the bar eye. The "purple box" on the top-right was the Omarchy toast: `notify-send --icon=security-high` paints Adwaita's shield in the 40px slot (a dark tile).
 - **Decision:** keep the Nerd Font eye on the bar. Toasts go through `omarchy notification send --app-name Vigil -g <eye>` so the same glyph shows in the toast. Critical uses the alert glyph. No `security-high`.
 - **Rejected:** replacing the bar eye with a lighthouse/lantern (misread); a custom mascot; leaving the shield icon.
+
+## 2026-09-02 Cost is spawn, not a daemon — numbers from this ThinkPad
+- User: Vigil runs always, must be light; put real metrics in the GitHub README vs other processes on this machine.
+- Measured 2026-09-02, ThinkPad E14 Gen 4, i7-1255U, 16 GB, Python 3.14.7: `snapshot` spawn median 109 ms / 62 MiB peak (`n=40`); `gate` allow spawn median 62 ms / 23 MiB (`n=40`); in-process gate 0.10 ms (`n=200`). No second daemon. QML lives in quickshell (410 MiB for the whole shell). Snapshot poll default **2 s** (~5% of one core). Script: `python3 scripts/bench.py`.
+- **Rejected:** inventing numbers; claiming the spawn is free; a daemon this turn; quoting unmeasured Rust times as facts.

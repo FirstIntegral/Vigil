@@ -90,6 +90,27 @@ class GateTests(unittest.TestCase):
             self.assertEqual(result.decision, ALLOW)
             self.assertTrue(result.asked)
 
+    def test_deny_always_remembers(self) -> None:
+        with TemporaryDirectory() as tmp:
+            home = Path(tmp)
+
+            def deny_always(h, req_id, timeout_sec, **_kwargs):
+                write_decision(h, req_id, "deny-always")
+                from vigil.pending import read_decision
+
+                return read_decision(h, req_id)
+
+            save_policy(home, ask_policy())
+            first = gate_payload(grok_bash("git push origin HEAD"), home=home, wait_fn=deny_always)
+            self.assertEqual(first.decision, DENY)
+            second = gate_payload(
+                grok_bash("git push origin feature"),
+                home=home,
+                wait_fn=lambda *_: (_ for _ in ()).throw(AssertionError("deny-always must not re-ask")),
+            )
+            self.assertEqual(second.decision, DENY)
+            self.assertFalse(second.asked)
+
     def test_always_allow_remembers(self) -> None:
         with TemporaryDirectory() as tmp:
             home = Path(tmp)

@@ -53,6 +53,16 @@ class SeatbeltTests(unittest.TestCase):
             self.assertEqual(result.decision, DENY)
             self.assertTrue(result.asked)
 
+    def test_default_lets_sudo_through(self) -> None:
+        with TemporaryDirectory() as tmp:
+            result = gate_payload(
+                grok_bash("sudo true"),
+                home=Path(tmp),
+                wait_fn=lambda *_: (_ for _ in ()).throw(AssertionError("seatbelt must not ask sudo")),
+            )
+            self.assertEqual(result.decision, ALLOW)
+            self.assertFalse(result.asked)
+
     def test_off_allows_rm_root(self) -> None:
         with TemporaryDirectory() as tmp:
             home = Path(tmp)

@@ -23,7 +23,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This Ubuntu box never armed hooks. The next session is on a real Omarchy machine. Session files are gitignored, so a fresh clone will not have `session_compact.md`. Resume from this file + `docs/DECISIONS.md`.
 
-Version **0.5.1**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/vigil.git`.
+Version **0.5.2**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/vigil.git`.
 
 1. GitHub SSH must work on that machine (repo is private).
 2. Install the plugin:
@@ -37,7 +37,7 @@ Version **0.5.1**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **ale
    - a deadly call (`rm -rf /`) shows the polkit card, a bar line, and a toast
    - ghosts outline the real Hyprland windows
    - lock the screen → agents freeze; unlock does **not** unfreeze; card offers keep frozen / let them run / restore files
-6. Then Omarchy plugin competition submit.
+6. Marketplace listing is separate and needs a **public** GitHub repo. The first plugin competition already ended (2026-08-24). Do not make the repo public unless the user says so.
 
 Do **not** `vigil install` on Ubuntu or any non-Omarchy host. Do not become herdr / `omarchy.agents` / omaharness. Do not return harness `ask`. Overlay IPC must stay `open`/`close` only.
 

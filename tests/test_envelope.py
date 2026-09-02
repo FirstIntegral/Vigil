@@ -73,3 +73,26 @@ class EnvelopeTests(unittest.TestCase):
         held = apply_envelope("hermit", risk, bash("curl https://example.com"))
         self.assertTrue(held.hold)
         self.assertEqual(held.decision, ASK)
+
+    def test_read_holds_project_write(self) -> None:
+        call = ToolCall(
+            event="pre_tool_use",
+            tool="write",
+            raw_tool="search_replace",
+            command=None,
+            path="/home/brwsk/projects/vigil/README.md",
+            cwd="/home/brwsk/projects/vigil",
+            workspace="/home/brwsk/projects/vigil",
+            session_id="s",
+            permission_mode="",
+            agent_hint="grok",
+            raw_input={},
+        )
+        held = apply_envelope("read", classify(call), call)
+        self.assertTrue(held.hold)
+
+    def test_desktop_holds_plugin_inject(self) -> None:
+        risk = classify(bash("omarchy plugin add https://example.com/x.git"))
+        held = apply_envelope("desktop", risk, bash("omarchy plugin add https://example.com/x.git"))
+        self.assertTrue(held.hold)
+        self.assertEqual(held.decision, "deny")

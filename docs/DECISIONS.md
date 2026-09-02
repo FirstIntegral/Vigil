@@ -69,3 +69,13 @@
 - Glass proof: `omarchy system lock` engaged Quickshell ext-session-lock (`omarchy-shell lock isLocked` → true, `sessionLocked`/`secure` true). `loginctl LockedHint` stayed no. No `hyprlock`/`swaylock`/`gtklock` process. Vigil never froze; unlock stamped no away card.
 - **Decision:** `is_locked()` asks `omarchy-shell lock isLocked` first. Keep loginctl + hyprlock/swaylock/gtklock as fallbacks. Still do not clone `omarchy.lock`.
 - **Rejected:** treating hyprlock as Omarchy's locker; writing our own lock screen; polling `/proc` for `qs`.
+
+## 2026-09-02 Marketplace listing, not a live prize heat
+- First Omarchy plugin competition closed 2026-08-24 09:00 CEST; winners posted 2026-08-28. News says they will run again, no second heat announced as of 2026-09-02.
+- **Decision:** next public step is an Omarchy plugin marketplace listing (`omacom/omarchy-plugin-marketplace`). Repo stays private until the user says make it public. README now has install **and** remove, plus HTTPS clone for the public URL.
+- **Rejected:** opening a marketplace issue against a private repo; flipping visibility without an explicit ask; waiting on an unannounced second competition before listing.
+
+## 2026-09-02 Toast uses the Vigil eye, not security-high
+- User liked the bar eye. The "purple box" on the top-right was the Omarchy toast: `notify-send --icon=security-high` paints Adwaita's shield in the 40px slot (a dark tile).
+- **Decision:** keep the Nerd Font eye on the bar. Toasts go through `omarchy notification send --app-name Vigil -g <eye>` so the same glyph shows in the toast. Critical uses the alert glyph. No `security-high`.
+- **Rejected:** replacing the bar eye with a lighthouse/lantern (misread); a custom mascot; leaving the shield icon.

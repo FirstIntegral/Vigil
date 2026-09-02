@@ -67,10 +67,14 @@ Press `m` to cycle. There are four global modes:
 ## Install (Omarchy only)
 
 ```
-omarchy plugin add git@github.com:FirstIntegral/vigil.git --enable
+omarchy plugin add https://github.com/FirstIntegral/vigil.git --enable
 ```
 
-This repo is private, so GitHub SSH must work on that machine.
+If the GitHub repository is still private, clone over SSH instead:
+
+```
+omarchy plugin add git@github.com:FirstIntegral/vigil.git --enable
+```
 
 Then arm the hooks once. Either:
 
@@ -83,6 +87,26 @@ or open the bar panel and press `i`.
 Restart the agent session so the hook actually loads. Left-click the eye in the bar.
 
 Do not arm hooks in a session you still need unblocked unless the overlay (or `vigil decide` from a **human** terminal) is ready to answer cards.
+
+## Remove
+
+Disarm the hooks first, while the plugin is still on disk:
+
+```
+python3 ~/.config/omarchy/plugins/xyz.brwsk.vigil/bin/vigil uninstall
+```
+
+Then remove the plugin from Omarchy:
+
+```
+omarchy plugin remove xyz.brwsk.vigil
+```
+
+That does not delete `~/.config/vigil` or `~/.local/state/vigil`. Those directories are your tickets and black box. Delete them yourself if you want them gone.
+
+## Dependencies
+
+Python 3.11+ (stdlib only). On Omarchy: `notify-send`, `omarchy-shell`, and optionally `hyprctl` for window ghosts. No pip packages. License: MIT.
 
 ### First run checklist
 

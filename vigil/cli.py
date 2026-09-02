@@ -23,6 +23,8 @@ from vigil.notify import ALERTS
 from vigil.policy import MODES, load_policy, save_policy
 from vigil.rewind import rewind
 from vigil.snapshot import collect, default_state_path, dumps, write_snapshot
+from vigil.prove import dumps as dumps_prove
+from vigil.prove import prove as run_prove
 from vigil.validate import PluginInvalid, assert_valid
 
 
@@ -103,6 +105,14 @@ def cmd_validate(args: argparse.Namespace) -> int:
         return 1
     sys.stdout.write(json.dumps({"ok": True, "id": PLUGIN_ID, "root": str(root)}) + "\n")
     return 0
+
+
+def cmd_prove(args: argparse.Namespace) -> int:
+    home = _home(args)
+    helper = args.helper or _helper()
+    report = run_prove(home, helper=helper, mint=not args.check)
+    sys.stdout.write(dumps_prove(report))
+    return 0 if report.get("ok") else 1
 
 
 def cmd_version(_: argparse.Namespace) -> int:
@@ -401,6 +411,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     ver = sub.add_parser("version")
     ver.set_defaults(func=cmd_version)
+
+    prove = sub.add_parser(
+        "prove",
+        help="Safe glass proof. Mints a drill card. Never deletes anything.",
+    )
+    prove.add_argument(
+        "--check",
+        action="store_true",
+        help="Only classify and check hooks. Do not mint a card.",
+    )
+    prove.add_argument("--helper", default=None)
+    prove.set_defaults(func=cmd_prove)
 
     gate = sub.add_parser("gate", help="PreToolUse hook. Reads JSON on stdin.")
     gate.set_defaults(func=cmd_gate)

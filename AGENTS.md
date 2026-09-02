@@ -23,7 +23,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This Ubuntu box never armed hooks. The next session is on a real Omarchy machine. Session files are gitignored, so a fresh clone will not have `session_compact.md`. Resume from this file + `docs/DECISIONS.md`.
 
-Version **0.5.2**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/vigil.git`.
+Version **0.5.3**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/vigil.git`.
 
 1. GitHub SSH must work on that machine (repo is private).
 2. Install the plugin:
@@ -34,8 +34,8 @@ Version **0.5.2**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **ale
 4. Restart the agent session so the hook loads.
 5. Prove the loop on glass:
    - `pytest` / project edits stay silent
-   - a deadly call (`rm -rf /`) shows the polkit card, a bar line, and a toast
-   - ghosts outline the real Hyprland windows
+   - **human** terminal: `python3 bin/vigil prove` — polkit card + bar + toast; nothing is deleted; deny it
+   - live hook: ask the agent to run `vigil-glass-proof` (command-not-found if the hook is missing). Never ask it to delete `/`
    - lock the screen → agents freeze; unlock does **not** unfreeze; card offers keep frozen / let them run / restore files
 6. Marketplace listing is separate and needs a **public** GitHub repo. The first plugin competition already ended (2026-08-24). Do not make the repo public unless the user says so.
 
@@ -47,6 +47,7 @@ Later, not blocking submit: OpenCode/Codex hook install; Rust `vigil-gate` when 
 - Build: none (no compile step)
 - Test: `bash scripts/test.sh` (unittest + `vigil validate`)
 - Bench: `python3 scripts/bench.py` (gate/snapshot spawn + live RSS; writes JSON to stdout)
+- Glass proof: `python3 bin/vigil prove --check` (classify only) or `python3 bin/vigil prove` (mint a drill card; human terminal)
 - Run collector: `python3 bin/vigil snapshot --pretty`
 - Gate (hook): `python3 bin/vigil gate` (JSON on stdin)
 - Decide: `python3 bin/vigil decide <id> allow|deny|session|always|deny-always` (human terminal only)

@@ -84,3 +84,8 @@
 - User: Vigil runs always, must be light; put real metrics in the GitHub README vs other processes on this machine.
 - Measured 2026-09-02, ThinkPad E14 Gen 4, i7-1255U, 16 GB, Python 3.14.7: `snapshot` spawn median 109 ms / 62 MiB peak (`n=40`); `gate` allow spawn median 62 ms / 23 MiB (`n=40`); in-process gate 0.10 ms (`n=200`). No second daemon. QML lives in quickshell (410 MiB for the whole shell). Snapshot poll default **2 s** (~5% of one core). Script: `python3 scripts/bench.py`.
 - **Rejected:** inventing numbers; claiming the spawn is free; a daemon this turn; quoting unmeasured Rust times as facts.
+
+## 2026-09-02 Glass proof is a drill, not rm of /
+- User: README told people to ask an agent to run a recursive delete of `/`. If the hook is missing, Grok hooks fail open. GNU `rm --preserve-root` is not a product guarantee.
+- **Decision:** `vigil prove` classifies deadly samples in-process (no exec) and mints a card for the sentinel `vigil-glass-proof`. That sentinel is DENY-class; if it ever reaches a shell it is command-not-found. First-run and AGENTS.md never tell anyone to delete `/` to test. License remains MIT (compatible with Omarchy and the marketplace).
+- **Rejected:** keeping the deadly first-run step; relying on GNU preserve-root; a dry-run flag on `rm`.

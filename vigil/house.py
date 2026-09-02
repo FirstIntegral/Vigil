@@ -21,6 +21,7 @@ _CLASS_ARTICLE = {
     "desktop-kill": 4,
     "plugin-inject": 4,
     "self-approve": 4,
+    "glass-proof": 0,
     "power": 2,
     "chmod-root": 0,
     "fork-bomb": 0,

@@ -30,6 +30,7 @@ CRITICAL_CLASSES = frozenset(
         "desktop-kill",
         "plugin-inject",
         "self-approve",
+        "glass-proof",
     }
 )
 
@@ -135,6 +136,7 @@ _SELF_APPROVE = re.compile(
     r"\bvigil\s+decide\b|\.local/state/vigil|\.config/vigil|pending/\S+\.decision",
     re.IGNORECASE,
 )
+_GLASS_PROOF = re.compile(r"(^|[;&|]\s*)vigil-glass-proof(\s|$)")
 _IDENTITY = re.compile(
     r"\b(ssh-add|gpg\s+--(clearsign|sign|detach-sign)|gh\s+auth)\b",
     re.IGNORECASE,
@@ -326,6 +328,15 @@ def classify(call: ToolCall) -> Risk:
             "Self-approve",
             "Blocked. An agent cannot answer its own card or rewrite Vigil.",
             reversible=False,
+        )
+    if _GLASS_PROOF.search(cmd):
+        return _risk(
+            call,
+            DENY,
+            "glass-proof",
+            "Drill: filesystem delete",
+            "This is a test. Nothing is deleted. Deny it.",
+            reversible=True,
         )
     if _FORK_BOMB.search(cmd):
         return _risk(call, DENY, "fork-bomb", "Fork bomb", "Blocked. This would hang the machine.", reversible=False)

@@ -106,7 +106,13 @@ That does not delete `~/.config/vigil` or `~/.local/state/vigil`. Those director
 
 ## Dependencies
 
-Python 3.11+ (stdlib only). On Omarchy: `notify-send`, `omarchy-shell`, and optionally `hyprctl` for window ghosts. No pip packages. License: MIT.
+Python 3.11+ (stdlib only). On Omarchy: `notify-send`, `omarchy-shell`, and optionally `hyprctl` for window ghosts. No pip packages.
+
+## License
+
+Vigil is **MIT**. You may use, copy, modify, merge, publish, and sell it, so long as you keep the copyright notice. There is **no warranty**.
+
+That matches Omarchy itself (MIT) and the plugin marketplace, which asks for a root `LICENSE` file and does not require a copyleft license. First-party Omarchy plugins (`omarchy.agents`, and so on) are MIT too. A GPL-only plugin would be an awkward fit next to MIT QML in `omarchy-shell`; MIT is the usual choice.
 
 ### First run checklist
 
@@ -117,10 +123,19 @@ Do this on Omarchy, not on Ubuntu.
 3. Press `i` in the Vigil panel, or run the `install` command above.
 4. Quit and restart Grok / Claude Code / whichever agent you use, so it picks up the hook.
 5. Run something harmless (`pytest` in a project). Nothing should pop up.
-6. Ask the agent to run `rm -rf /` (or any other deadly call). You should get the polkit card, a bar warning, and a toast. Deny it.
-7. Lock the session. Agents should freeze. Unlock. They should stay frozen until you press `U`.
+6. From a **human** terminal, not from an agent:
 
-If step 6 never appears, the hook did not load — restart the agent and check that `~/.grok/hooks/vigil.json` (or Claude `settings.json`) exists.
+   ```
+   python3 ~/.config/omarchy/plugins/xyz.brwsk.vigil/bin/vigil prove
+   ```
+
+   That mints the real polkit card, bar line, and toast for a **drill**. Nothing is deleted. Deny it.
+7. To prove the *live hook* (the path that actually sits on tool calls), ask the agent to run `vigil-glass-proof`. Same card. If you only see `command not found` and no card, the hook did not load — restart the agent.
+8. Lock the session. Agents should freeze. Unlock. They should stay frozen until you press `U`.
+
+Do **not** ask an agent to delete `/` or `$HOME` to test this. Grok hooks fail *open* if the hook is missing, crashes, or times out. GNU `rm` may refuse `rm -rf /` without `--no-preserve-root`, but that is not a seatbelt. The drill is.
+
+If step 6 never appears, check that `~/.grok/hooks/vigil.json` (or Claude `settings.json`) exists. If step 7 never appears, restart the agent so it loads that file.
 
 | Key | Action |
 | --- | --- |

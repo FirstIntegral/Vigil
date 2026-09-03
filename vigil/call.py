@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -11,6 +12,8 @@ TOOL_ALIASES = {
     "run_terminal_command": "bash",
     "run_terminal_cmd": "bash",
     "shell": "bash",
+    "execute": "bash",
+    "bash_command": "bash",
     "read": "read",
     "read_file": "read",
     "write": "write",
@@ -40,7 +43,16 @@ def _first(data: dict[str, Any], *keys: str) -> Any:
 
 
 def _as_dict(value: Any) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str) and value.strip().startswith("{"):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        if isinstance(parsed, dict):
+            return parsed
+    return {}
 
 
 def _as_str(value: Any) -> str:
@@ -113,8 +125,11 @@ def parse_envelope(data: dict[str, Any]) -> ToolCall:
     event = normalize_event(_as_str(_first(data, "hook_event_name", "hookEventName")))
     raw_tool = _as_str(_first(data, "tool_name", "toolName"))
     tool_input = _as_dict(_first(data, "tool_input", "toolInput") or {})
-    command = _first(tool_input, "command", "cmd", "script")
-    command_s = _as_str(command) if command else None
+    command = _first(tool_input, "command", "cmd", "script", "argv")
+    if isinstance(command, (list, tuple)):
+        command_s = " ".join(_as_str(x) for x in command) or None
+    else:
+        command_s = _as_str(command) if command else None
     path = _first(
         tool_input,
         "file_path",
@@ -122,6 +137,7 @@ def parse_envelope(data: dict[str, Any]) -> ToolCall:
         "target_file",
         "targetFile",
         "path",
+        "filename",
     )
     path_s = _as_str(path) if path else None
     cwd = _as_str(_first(data, "cwd"))

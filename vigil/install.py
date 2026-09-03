@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +34,56 @@ def grok_hook_path(home: Path) -> Path:
 
 def claude_settings_path(home: Path) -> Path:
     return home / ".claude" / "settings.json"
+
+
+def opencode_plugin_path(home: Path) -> Path:
+    return home / ".config" / "opencode" / "plugins" / "vigil.js"
+
+
+def codex_hooks_path(home: Path) -> Path:
+    return home / ".codex" / "hooks.json"
+
+
+def _plugin_root_from_helper(helper: str) -> Path:
+    return Path(helper).resolve().parent.parent
+
+
+def opencode_plugin_source(helper: str) -> str:
+    candidates = (
+        _plugin_root_from_helper(helper) / "harnesses" / "opencode-plugin.js",
+        Path(__file__).resolve().parent.parent / "harnesses" / "opencode-plugin.js",
+    )
+    body = ""
+    for src in candidates:
+        if src.is_file():
+            body = src.read_text(encoding="utf-8")
+            break
+    if not body:
+        raise FileNotFoundError("missing harnesses/opencode-plugin.js")
+    return body.replace("__VIGIL_HELPER__", helper.replace("\\", "\\\\"))
+
+
+def codex_hook_document(helper: str) -> dict[str, Any]:
+    handler = {
+        "type": "command",
+        "command": f"{helper} gate",
+        "timeout": HOOK_TIMEOUT_SEC,
+        "statusMessage": "Vigil",
+    }
+    return {
+        "hooks": {
+            "PreToolUse": [{"hooks": [handler]}],
+            "PostToolUse": [{"hooks": [{**handler, "timeout": 5}]}],
+        }
+    }
+
+
+def merge_codex_hooks(doc: dict[str, Any], helper: str) -> dict[str, Any]:
+    return merge_claude_hooks(doc, helper)
+
+
+def strip_codex_hooks(doc: dict[str, Any], helper: str) -> dict[str, Any]:
+    return strip_claude_hooks(doc, helper)
 
 
 def _is_our_handler(handler: Any, helper: str) -> bool:
@@ -115,7 +164,23 @@ def hooks_installed(home: Path, helper: str) -> dict[str, bool]:
         except (OSError, json.JSONDecodeError):
             data = {}
         claude_ok = MARKER in json.dumps(data) or helper in json.dumps(data)
-    return {"grok": grok_ok, "claude": claude_ok}
+    opencode_ok = False
+    opath = opencode_plugin_path(home)
+    if opath.is_file():
+        try:
+            obody = opath.read_text(encoding="utf-8")
+            opencode_ok = MARKER in obody or helper in obody
+        except OSError:
+            opencode_ok = False
+    codex_ok = False
+    xpath = codex_hooks_path(home)
+    if xpath.is_file():
+        try:
+            body = xpath.read_text(encoding="utf-8")
+            codex_ok = MARKER in body or helper in body
+        except OSError:
+            codex_ok = False
+    return {"grok": grok_ok, "claude": claude_ok, "opencode": opencode_ok, "codex": codex_ok}
 
 
 def install(home: Path, helper: str) -> dict[str, str]:
@@ -135,16 +200,31 @@ def install(home: Path, helper: str) -> dict[str, str]:
         if not isinstance(settings, dict):
             settings = {}
         merged = merge_claude_hooks(settings, helper)
-        tmp = cpath.with_suffix(".tmp")
-        tmp.write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
-        tmp.replace(cpath)
-        try:
-            os.chmod(cpath, 0o600)
-        except OSError:
-            pass
+        write_private(cpath, json.dumps(merged, indent=2) + "\n")
         written["claude"] = str(cpath)
     else:
         written["claude"] = "skipped (no ~/.claude/settings.json)"
+
+    opath = opencode_plugin_path(home)
+    opath.parent.mkdir(parents=True, exist_ok=True)
+    write_private(opath, opencode_plugin_source(helper))
+    written["opencode"] = str(opath)
+
+    xpath = codex_hooks_path(home)
+    xpath.parent.mkdir(parents=True, exist_ok=True)
+    if xpath.is_file():
+        try:
+            existing = json.loads(xpath.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            existing = {}
+        if not isinstance(existing, dict):
+            existing = {}
+        merged_x = merge_codex_hooks(existing, helper)
+    else:
+        merged_x = codex_hook_document(helper)
+    write_private(xpath, json.dumps(merged_x, indent=2) + "\n")
+    written["codex"] = str(xpath)
+
     skill_dest = home / ".agents" / "skills" / "vigil" / "SKILL.md"
     root = Path(helper).resolve().parent.parent
     src = root / "skill" / "SKILL.md"
@@ -173,8 +253,28 @@ def uninstall(home: Path, helper: str) -> dict[str, str]:
             settings = {}
         if isinstance(settings, dict):
             stripped = strip_claude_hooks(settings, helper)
-            tmp = cpath.with_suffix(".tmp")
-            tmp.write_text(json.dumps(stripped, indent=2) + "\n", encoding="utf-8")
-            tmp.replace(cpath)
+            write_private(cpath, json.dumps(stripped, indent=2) + "\n")
             removed["claude"] = f"stripped {cpath}"
+    opath = opencode_plugin_path(home)
+    if opath.is_file():
+        opath.unlink()
+        removed["opencode"] = f"removed {opath}"
+    else:
+        removed["opencode"] = "absent"
+    xpath = codex_hooks_path(home)
+    if xpath.is_file():
+        try:
+            settings = json.loads(xpath.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            settings = {}
+        if isinstance(settings, dict):
+            stripped = strip_codex_hooks(settings, helper)
+            if stripped.get("hooks"):
+                write_private(xpath, json.dumps(stripped, indent=2) + "\n")
+                removed["codex"] = f"stripped {xpath}"
+            else:
+                xpath.unlink()
+                removed["codex"] = f"removed {xpath}"
+    else:
+        removed["codex"] = "absent"
     return removed

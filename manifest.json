@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "xyz.brwsk.vigil",
   "name": "Vigil",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "author": "Brusk Kawa Abdalla",
   "license": "MIT",
   "description": "Seatbelt for coding agents on Omarchy. Everyday work stays fast. Machine-killing tool calls wait on a polkit card. Tickets, papers, lid freeze, window ghosts, rewind.",

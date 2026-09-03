@@ -32,7 +32,7 @@ from vigil.envelope import apply_envelope
 from vigil.passport import envelope_for, make_id, upsert as upsert_passport
 from vigil.pending import write_surprise
 from vigil.rewind import should_cow, snapshot_file
-from vigil.risk import ALLOW, ASK, DENY, Risk, classify, is_secret_path, path_inside
+from vigil.risk import ALLOW, ASK, CRITICAL_CLASSES, DENY, Risk, classify, is_secret_path, path_inside
 
 WaitFn = Callable[..., Any]
 
@@ -83,6 +83,8 @@ def apply_mode(mode: str, classified: str, hold: bool = False) -> str:
 def _apply_human(action: str, policy: Policy, risk: Risk, session_id: str) -> tuple[str, str]:
     if action == "allow":
         return ALLOW, "Allowed once."
+    if action in {"session", "always"} and risk.class_id in CRITICAL_CLASSES:
+        return ALLOW, "Allowed once. Deadly classes cannot be ticketed."
     if action == "session":
         policy.remember_session(session_id, risk.rule_key)
         return ALLOW, "Allowed for this session."
@@ -286,8 +288,8 @@ def gate_payload(raw: str | bytes | dict[str, Any], *, home: Path, **kwargs: Any
         text = raw.decode("utf-8") if isinstance(raw, bytes) else raw
         text = text.strip()
         if not text:
-            resp = hook_response(ALLOW, "empty hook payload")
-            return GateResult(ALLOW, "empty hook payload", None, False, resp)
+            resp = hook_response(DENY, "empty hook payload")
+            return GateResult(DENY, "empty hook payload", None, False, resp)
         try:
             parsed = json.loads(text)
         except json.JSONDecodeError:

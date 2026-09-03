@@ -40,6 +40,16 @@ def _home(args: argparse.Namespace) -> Path:
     return Path(args.home) if args.home else Path.home()
 
 
+def _refuse_agent() -> int | None:
+    if not caller_is_agent():
+        return None
+    sys.stderr.write("vigil: refuse this command from an agent process\n")
+    sys.stdout.write(
+        json.dumps({"ok": False, "error": "agents cannot run this vigil command"}) + "\n"
+    )
+    return 2
+
+
 def cmd_snapshot(args: argparse.Namespace) -> int:
     snap = collect(home=_home(args))
     if args.write:
@@ -51,6 +61,9 @@ def cmd_snapshot(args: argparse.Namespace) -> int:
 
 
 def cmd_kill(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     try:
         result = kill_agent(args.pid, sig=args.signal)
     except KillRefused as exc:
@@ -72,6 +85,9 @@ def cmd_kill_all(args: argparse.Namespace) -> int:
     if not args.yes:
         sys.stderr.write("vigil: refuse kill-all without --yes\n")
         return 2
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     snap = collect(home=_home(args))
     results = []
     failed = False
@@ -108,6 +124,9 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 
 def cmd_prove(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     helper = args.helper or _helper()
     report = run_prove(home, helper=helper, mint=not args.check)
@@ -145,12 +164,16 @@ def cmd_decide(args: argparse.Namespace) -> int:
     if action not in ACTIONS:
         sys.stderr.write(f"vigil: unknown action {action!r}\n")
         return 2
-    if caller_is_agent():
-        sys.stderr.write("vigil: refuse decide from an agent process\n")
-        sys.stdout.write(json.dumps({"ok": False, "error": "agents cannot mint their own tickets"}) + "\n")
-        return 2
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
-    req = request_path(home, args.id)
+    try:
+        req = request_path(home, args.id)
+    except ValueError:
+        sys.stderr.write("vigil: invalid pending id\n")
+        sys.stdout.write(json.dumps({"ok": False, "error": "invalid pending id"}) + "\n")
+        return 2
     kind = "tool"
     try:
         data = json.loads(req.read_text(encoding="utf-8"))
@@ -190,6 +213,9 @@ def cmd_pending(args: argparse.Namespace) -> int:
 
 
 def cmd_freeze(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     policy = load_policy(home)
     policy.freeze()
@@ -199,6 +225,9 @@ def cmd_freeze(args: argparse.Namespace) -> int:
 
 
 def cmd_unfreeze(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     policy = load_policy(home)
     policy.unfreeze()
@@ -208,6 +237,9 @@ def cmd_unfreeze(args: argparse.Namespace) -> int:
 
 
 def cmd_mode(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     policy = load_policy(home)
     if args.mode is None:
@@ -223,6 +255,9 @@ def cmd_mode(args: argparse.Namespace) -> int:
 
 
 def cmd_alert(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     policy = load_policy(home)
     if args.channel is None:
@@ -238,6 +273,9 @@ def cmd_alert(args: argparse.Namespace) -> int:
 
 
 def cmd_trust(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     policy = load_policy(home)
     if args.clear:
@@ -278,6 +316,9 @@ def cmd_panic(args: argparse.Namespace) -> int:
     if not args.yes:
         sys.stderr.write("vigil: refuse panic without --yes\n")
         return 2
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     policy = load_policy(home)
     policy.freeze()
@@ -302,6 +343,9 @@ def cmd_panic(args: argparse.Namespace) -> int:
 
 
 def cmd_install(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     helper = args.helper or _helper()
     written = install_hooks(_home(args), helper)
     sys.stdout.write(json.dumps({"ok": True, "written": written}) + "\n")
@@ -309,6 +353,9 @@ def cmd_install(args: argparse.Namespace) -> int:
 
 
 def cmd_uninstall(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     helper = args.helper or _helper()
     removed = uninstall_hooks(_home(args), helper)
     sys.stdout.write(json.dumps({"ok": True, "removed": removed}) + "\n")
@@ -316,6 +363,9 @@ def cmd_uninstall(args: argparse.Namespace) -> int:
 
 
 def cmd_envelope(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     if not args.id:
         sys.stdout.write(json.dumps({"ok": False, "error": "passport id required"}) + "\n")
@@ -329,6 +379,9 @@ def cmd_envelope(args: argparse.Namespace) -> int:
 
 
 def cmd_rewind(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     result = rewind(home, project_root=args.root or "")
     sys.stdout.write(json.dumps(result) + "\n")
@@ -336,6 +389,9 @@ def cmd_rewind(args: argparse.Namespace) -> int:
 
 
 def cmd_lid(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     policy = load_policy(home)
     if args.action == "off":
@@ -357,6 +413,9 @@ def cmd_lid(args: argparse.Namespace) -> int:
 
 def cmd_spawn(args: argparse.Namespace) -> int:
     """Record an envelope for a launch. Exec only with --exec."""
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
     home = _home(args)
     agent = args.agent
     project = args.project or str(Path.cwd())

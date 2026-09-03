@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from vigil import POLICY_SCHEMA
 from vigil.notify import ALERTS, DEFAULT_ALERT
 from vigil.paths import policy_path, session_allow_path
-from vigil.risk import Risk
+from vigil.risk import CRITICAL_CLASSES, Risk
 from vigil.secure import write_private
 
 MODES = ("off", "seatbelt", "ask", "frozen")
@@ -132,9 +132,13 @@ class Policy:
     def key_override(self, risk: Risk, session_id: str) -> str | None:
         if risk.rule_key in self.deny_keys:
             return "deny"
+        if risk.class_id in CRITICAL_CLASSES:
+            return None
         if risk.rule_key in self.allow_keys:
             return "allow"
-        grants = self.session_allow.get(session_id) or self.session_allow.get("_")
+        grants = self.session_allow.get(session_id)
+        if grants is None:
+            grants = self.session_allow.get("_")
         if grants and risk.rule_key in grants:
             return "allow"
         return None

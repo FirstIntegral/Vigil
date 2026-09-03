@@ -68,7 +68,7 @@ class GlassProofTests(unittest.TestCase):
     def test_cli_check(self) -> None:
         with TemporaryDirectory() as tmp:
             buf = StringIO()
-            with patch("sys.stdout", buf):
+            with patch("vigil.cli.caller_is_agent", return_value=False), patch("sys.stdout", buf):
                 rc = main(["--home", tmp, "prove", "--check"])
             self.assertEqual(rc, 0)
             data = json.loads(buf.getvalue())

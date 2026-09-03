@@ -26,6 +26,22 @@ class InstallTests(unittest.TestCase):
             self.assertIn("PreToolUse", body["hooks"])
             uninstall(home, helper)
             self.assertFalse(path.exists())
+            self.assertFalse((home / ".config" / "opencode" / "plugins" / "vigil.js").exists())
+            self.assertFalse((home / ".codex" / "hooks.json").exists())
+
+    def test_install_writes_opencode_and_codex(self) -> None:
+        with TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            helper = "/x/bin/vigil"
+            written = install(home, helper)
+            opath = Path(written["opencode"])
+            xpath = Path(written["codex"])
+            self.assertTrue(opath.is_file())
+            self.assertIn(helper, opath.read_text(encoding="utf-8"))
+            self.assertIn("tool.execute.before", opath.read_text(encoding="utf-8"))
+            body = json.loads(xpath.read_text(encoding="utf-8"))
+            self.assertIn("PreToolUse", body["hooks"])
+            self.assertIn("vigil gate", json.dumps(body))
 
     def test_claude_merge_keeps_other_hooks(self) -> None:
         settings = {

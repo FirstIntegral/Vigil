@@ -104,3 +104,13 @@
 - User asked if Vigil could skip its card after Claude (or any tool) is set to bypass / always-approve. Then: keep everything as is.
 - **Decision:** Gate still ignores `permissionMode`. YOLO / `bypassPermissions` / OpenCode `"*" = allow` is why the overlay exists. Hook runs before the harness prompt, so a per-command Yes from Claude cannot suppress Vigil on that same call. 1config on this box already YOLO’s all three tools; skipping Vigil there would mean no card.
 - **Rejected:** treating harness bypass as a per-command allow; deferring deadly holds to Claude’s UI; a split mode (Claude asks for risky, Vigil only for deadly).
+
+## 2026-09-03 Seatbelt holes closed after a security review
+- Full review of 0.5.3 found real bypasses in seatbelt: the mode/unfreeze/install CLI was ASK then silent (regex only caught decide); GNU no-preserve-root recursive delete of / and split rm flags missed the root regex; `git -C repo` force-push of main missed `git push`; safe-bash was a prefix match so a leading `true` plus a chain was "safe"; MCP/unknown tools never scanned a nested command; writes to the Omarchy plugins tree and hook files were write-outside (silent in seatbelt); Always tickets could cover DENY-class; overlay IPC open() could spoof card copy; pending ids were unsanitized paths; empty hook payload fail-opened; write_private followed a planted tmp symlink.
+- **Decision:** deadly patterns run on any tool that carries a command (not only bash). Self-approve covers mode/unfreeze/install/uninstall and plugin/hook paths. Critical classes cannot be ticketed. Overlay prefers pending files over IPC JSON and hides S/A on critical. CLI mutating commands refuse caller_is_agent. write_private uses O_EXCL plus O_NOFOLLOW. Version **0.5.4**.
+- **Rejected:** holding every python -c in seatbelt (too noisy; same-user split-string writes stay a documented cooperative limit); scanning write-tool file bodies (false-denies the classifier's own source).
+
+## 2026-09-03 Finish the remaining seatbelt holes + seat OpenCode and Codex
+- Follow-up to the 0.5.4 review. User: fix everything, push, fix this machine.
+- **Decision:** collapse `'a'+'b'` before regex so split-string state writes still match; `bash /tmp/…` / `python3 /tmp/…` is DENY-class `run-tmp`; `python` plus urllib/exec and `base64 | sh` are pipe-shell. `vigil install` writes `~/.config/opencode/plugins/vigil.js` (auto-loaded, no edit of opencode.jsonc) and `~/.codex/hooks.json`. Cursor and the rest stay unwired. Version stays **0.5.4** (never left the machine).
+- **Rejected:** holding every `curl -o` in seatbelt (nanny); editing 1config’s `opencode.jsonc` to list the plugin.

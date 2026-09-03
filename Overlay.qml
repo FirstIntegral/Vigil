@@ -18,10 +18,11 @@ Item {
   readonly property var service: shell && shell.serviceFor ? shell.serviceFor("xyz.brwsk.vigil") : null
   readonly property var pending: service && service.pending ? service.pending : []
   readonly property var current: {
-    if (root.request) return root.request
     if (pending && pending.length) return pending[0]
+    if (root.request) return root.request
     return null
   }
+  readonly property bool deadly: root.current && String(root.current.severity || "") === "critical"
   readonly property string kind: root.current ? String(root.current.kind || "tool") : "tool"
   readonly property var ghosts: root.current && root.current.ghosts ? root.current.ghosts : []
   readonly property bool awayCard: kind === "away" || kind === "surprise"
@@ -37,6 +38,7 @@ Item {
   property string fontFamily: Style.font.menuFamily
 
   function open(payloadJson) {
+    // Raise the card. Content and id come from pending files, not IPC JSON.
     try { root.request = payloadJson ? JSON.parse(payloadJson) : null }
     catch (e) { root.request = null }
     root.opened = true
@@ -175,9 +177,9 @@ Item {
           } else if (event.key === Qt.Key_Y || event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
             root.decide("allow"); event.accepted = true
           } else if (event.key === Qt.Key_S) {
-            root.decide("session"); event.accepted = true
+            if (!root.deadly) { root.decide("session"); event.accepted = true }
           } else if (event.key === Qt.Key_A) {
-            root.decide("always"); event.accepted = true
+            if (!root.deadly) { root.decide("always"); event.accepted = true }
           } else if (event.key === Qt.Key_D) {
             root.decide("deny-always"); event.accepted = true
           } else if (event.key === Qt.Key_W) {
@@ -269,7 +271,9 @@ Item {
         Text {
           text: root.awayCard
             ? "N keep frozen    U let them run    W restore files"
-            : "N deny    Y allow once    S this session    A always this class"
+            : (root.deadly
+              ? "N deny    Y allow once    D deny this class"
+              : "N deny    Y allow once    S this session    A always this class")
           color: root.foreground
           opacity: 0.36
           font.family: root.fontFamily

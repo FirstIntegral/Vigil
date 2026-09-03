@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import re
+import secrets
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +24,11 @@ _PEM = re.compile(
 
 
 def ensure_private_dir(path: Path) -> Path:
+    if path.is_symlink():
+        raise OSError(f"refusing symlink directory {path}")
     path.mkdir(parents=True, exist_ok=True)
+    if path.is_symlink():
+        raise OSError(f"refusing symlink directory {path}")
     try:
         os.chmod(path, 0o700)
     except OSError:
@@ -33,11 +38,22 @@ def ensure_private_dir(path: Path) -> Path:
 
 def write_private(path: Path, text: str) -> None:
     ensure_private_dir(path.parent)
-    tmp = path.with_name(path.name + ".tmp")
-    fd = os.open(str(tmp), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as fh:
-        fh.write(text)
-    os.replace(tmp, path)
+    tmp = path.with_name(path.name + f".tmp.{os.getpid()}.{secrets.token_hex(4)}")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    fd = os.open(str(tmp), flags, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(tmp, path)
+        tmp = None
+    finally:
+        if tmp is not None:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
     try:
         os.chmod(path, 0o600)
     except OSError:

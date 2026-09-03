@@ -8,6 +8,7 @@ deny. Never fail-open on silence — Grok YOLO would otherwise run it.
 from __future__ import annotations
 
 import json
+import re
 import time
 import uuid
 from dataclasses import dataclass
@@ -28,6 +29,7 @@ AGENT_DISPLAY = {
 }
 
 ACTIONS = frozenset({"allow", "session", "always", "deny", "deny-always", "rewind", "unfreeze"})
+_ID_OK = re.compile(r"^[A-Za-z0-9._-]{1,80}$")
 
 
 @dataclass(frozen=True)
@@ -40,12 +42,18 @@ def new_id() -> str:
     return uuid.uuid4().hex
 
 
+def _safe_id(req_id: str) -> str:
+    if not _ID_OK.fullmatch(req_id or ""):
+        raise ValueError("invalid pending id")
+    return req_id
+
+
 def request_path(home: Path, req_id: str) -> Path:
-    return pending_dir(home) / f"{req_id}.json"
+    return pending_dir(home) / f"{_safe_id(req_id)}.json"
 
 
 def decision_path(home: Path, req_id: str) -> Path:
-    return pending_dir(home) / f"{req_id}.decision"
+    return pending_dir(home) / f"{_safe_id(req_id)}.decision"
 
 
 def write_request(
@@ -91,6 +99,7 @@ def write_request(
         "reversible": risk.reversible,
         "ghosts": ghosts,
         "permissionMode": call.permission_mode,
+        "severity": severity_for(risk.class_id),
     }
     folder = ensure_private_dir(pending_dir(home))
     path = request_path(home, req_id)

@@ -33,6 +33,8 @@ Item {
   property var dossier: ({})
   property bool grokHook: false
   property bool claudeHook: false
+  property bool opencodeHook: false
+  property bool codexHook: false
   property bool incident: false
   property var lid: ({ enabled: true, locked: false, held: false })
   property var audit: []
@@ -68,7 +70,7 @@ Item {
   }
   readonly property bool alarming: root.waitingCount > 0 || root.frozen || root.severity === "critical" || root.incident
   readonly property bool hasAgents: root.agentCount > 0
-  readonly property bool hooksLive: root.grokHook || root.claudeHook
+  readonly property bool hooksLive: root.grokHook || root.claudeHook || root.opencodeHook || root.codexHook
 
   function setting(name, fallback) {
     var value = settings ? settings[name] : undefined
@@ -116,6 +118,8 @@ Item {
       var hooks = data.hooks || {}
       grokHook = hooks.grok === true
       claudeHook = hooks.claude === true
+      opencodeHook = hooks.opencode === true
+      codexHook = hooks.codex === true
       incident = data.incident === true
       lid = data.lid || { enabled: true, locked: false, held: false }
       sessionsRevision++

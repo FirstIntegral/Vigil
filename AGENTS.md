@@ -23,7 +23,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This Ubuntu box never armed hooks. The next session is on a real Omarchy machine. Session files are gitignored, so a fresh clone will not have `session_compact.md`. Resume from this file + `docs/DECISIONS.md`.
 
-Version **0.5.3**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/Vigil.git`.
+Version **0.5.4**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/Vigil.git`.
 
 1. GitHub SSH must work on that machine (repo is private).
 2. Install the plugin:
@@ -41,7 +41,7 @@ Version **0.5.3**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **ale
 
 Do **not** `vigil install` on Ubuntu or any non-Omarchy host. Do not become herdr / `omarchy.agents` / omaharness. Do not return harness `ask`. Overlay IPC must stay `open`/`close` only.
 
-Later, not blocking submit: OpenCode/Codex hook install; Rust `vigil-gate` when a compiler exists. Landlock is out for v1 (plugin has no sudo).
+Later, not blocking submit: Cursor and remaining harness hooks; Rust `vigil-gate` when a compiler exists. Landlock is out for v1 (plugin has no sudo).
 
 ## Commands
 - Build: none (no compile step)
@@ -51,7 +51,7 @@ Later, not blocking submit: OpenCode/Codex hook install; Rust `vigil-gate` when 
 - Run collector: `python3 bin/vigil snapshot --pretty`
 - Gate (hook): `python3 bin/vigil gate` (JSON on stdin)
 - Decide: `python3 bin/vigil decide <id> allow|deny|session|always|deny-always` (human terminal only)
-- Arm hooks: `python3 bin/vigil install` (always writes `~/.grok/hooks/vigil.json`; merges Claude if `~/.claude/settings.json` exists; OpenCode/Codex/Cursor not wired)
+- Arm hooks: `python3 bin/vigil install` (Grok hook file, OpenCode plugin, Codex hooks.json; merges Claude if `~/.claude/settings.json` exists; Cursor and the rest not wired)
 - Panic: `python3 bin/vigil panic --yes`
 - Envelope: `python3 bin/vigil envelope <id> project|hermit|desktop|read|seatbelt|cycle`
 - Rewind: `python3 bin/vigil rewind --root <project>`

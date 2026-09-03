@@ -107,7 +107,7 @@ Vigil does two different jobs. Do not mix them up.
 | `hermes` | Hermes |
 | `ori` | Ori |
 
-The bar lists these processes. Panic sends SIGTERM to every one of them. Lid freeze is a *gate* mode: only a hooked harness stops; an unhooked OpenCode pane keeps working while the screen is locked. A process Vigil does not name is invisible here: ChatGPT in a browser, Gemini, a Cursor GUI with no `cursor-agent` binary, and anything else.
+The bar lists these processes. Panic sends SIGTERM to every one of them. Lid freeze is a *gate* mode: only a hooked harness stops; an unhooked Cursor pane keeps working while the screen is locked. A process Vigil does not name is invisible here: ChatGPT in a browser, Gemini, a Cursor GUI with no `cursor-agent` binary, and anything else.
 
 **The seatbelt sits on a hook.** That is a PreToolUse / PostToolUse command the *harness* has to load. `vigil install` (panel `i`) writes only these:
 
@@ -115,19 +115,19 @@ The bar lists these processes. Panic sends SIGTERM to every one of them. Lid fre
 | --- | --- |
 | Grok | Always writes `~/.grok/hooks/vigil.json`. PreToolUse timeout is 120 seconds, PostToolUse is 5 seconds. Grok hooks fail *open* if the file is missing, the command crashes, or the timeout fires — Vigil denies the call before that 120 seconds. |
 | Claude Code | Merges the same `vigil gate` command into `~/.claude/settings.json` **if that file already exists**. It does not create Claude settings from scratch. |
-| OpenCode | Not wired. |
-| Codex | Not wired. |
+| OpenCode | Always writes `~/.config/opencode/plugins/vigil.js`. OpenCode loads that directory at startup. The plugin spawns `vigil gate` and throws on deny. |
+| Codex | Always writes `~/.codex/hooks.json` (merges if the file already exists). Same Claude-shaped JSON as the gate already parses. |
 | Cursor, Copilot CLI, Crush, Antigravity, Hermes, Ori | Not wired. |
 
 Install also copies the house-law skill to `~/.agents/skills/vigil/SKILL.md`. That is a reminder the agent can read. It is not a hook.
 
-Restart the agent after install. Grok and Claude Code only load hook files at session start.
+Restart the agent after install. Grok, Claude Code, OpenCode, and Codex load hook files at session start.
 
-The gate JSON is Grok camelCase (`toolName`, `hookEventName`, `toolInput`) and Claude snake_case (`tool_name`, `hook_event_name`, `tool_input`). If another harness already posted that shape to `python3 bin/vigil gate`, the classifier would run. Nothing in `install` makes OpenCode, Codex, or Cursor do that.
+The gate JSON is Grok camelCase (`toolName`, `hookEventName`, `toolInput`) and Claude snake_case (`tool_name`, `hook_event_name`, `tool_input`). OpenCode’s plugin builds the Grok shape. Codex posts the Claude shape.
 
-**What this means in practice.** An OpenCode pane can show up in the bar, and Panic can kill it. Until OpenCode’s hook is wired, its tool calls are not held. Same for Codex and the rest. Unhooked YOLO is unguarded YOLO.
+**What this means in practice.** Grok, Claude Code (if settings exist), OpenCode, and Codex are seated after `vigil install` and a restart of that agent. Cursor, Copilot CLI, Crush, Antigravity, Hermes, and Ori still are not. Unhooked YOLO is unguarded YOLO.
 
-`vigil uninstall` deletes the Grok hook file and strips Vigil’s lines from Claude settings. It does not touch other harnesses, because it never wrote them.
+`vigil uninstall` deletes the Grok hook file, the OpenCode plugin, and Codex `hooks.json` (or strips Vigil’s lines if other hooks remain), and strips Vigil’s lines from Claude settings.
 
 ## Remove
 
@@ -162,7 +162,7 @@ Do this on Omarchy, not on Ubuntu.
 1. Confirm GitHub SSH works: `ssh -T git@github.com`
 2. Add and enable the plugin (command above).
 3. Press `i` in the Vigil panel, or run the `install` command above.
-4. Quit and restart Grok or Claude Code (the only harnesses `install` arms today) so the hook actually loads. OpenCode, Codex, and the others are listed in the bar but are not hooked yet — see [Harnesses](#harnesses).
+4. Quit and restart the agent so the hook actually loads. `install` arms Grok, OpenCode, Codex, and Claude Code (if `~/.claude/settings.json` exists). Cursor and the rest stay unhooked — see [Harnesses](#harnesses).
 5. Run something harmless (`pytest` in a project). Nothing should pop up.
 6. From a **human** terminal, not from an agent:
 
@@ -176,7 +176,7 @@ Do this on Omarchy, not on Ubuntu.
 
 Do **not** ask an agent to delete `/` or `$HOME` to test this. Grok hooks fail *open* if the hook is missing, crashes, or times out. GNU `rm` may refuse `rm -rf /` without `--no-preserve-root`, but that is not a seatbelt. The drill is.
 
-If step 6 never appears, check that `~/.grok/hooks/vigil.json` exists (and Claude `~/.claude/settings.json` if you are proving Claude). If step 7 never appears, restart that agent so it loads the file. Proving the hook with OpenCode or Codex will not work until those installs exist.
+If step 6 never appears, check that `~/.grok/hooks/vigil.json` exists (and Claude `~/.claude/settings.json` if you are proving Claude; OpenCode `~/.config/opencode/plugins/vigil.js`; Codex `~/.codex/hooks.json`). If step 7 never appears, restart that agent so it loads the file.
 
 | Key | Action |
 | --- | --- |
@@ -200,7 +200,7 @@ If step 6 never appears, check that `~/.grok/hooks/vigil.json` exists (and Claud
 
 Vigil is a **consent UI on the hooked path**. It is not a jail, a sandbox, or a kernel security module. Read this before you trust it with a machine you cannot restore.
 
-**It is cooperative.** An agent that never loads the hook, that writes files from an unhooked child process, or that talks to Hyprland through a helper Vigil does not see, is not stopped. The seatbelt is honest about that.
+**It is cooperative.** An agent that never loads the hook, that writes files from an unhooked child process, or that talks to Hyprland through a helper Vigil does not see, is not stopped. The seatbelt is honest about that. A two-step download then execute is two calls; seatbelt allows the download. A python one-liner that never names Vigil's paths can still write them as this user.
 
 **Agents run as you.** Unix mode `0700` on Vigil’s state stops *other accounts*, not the agent on this account. The real gate is the hook: writes to `~/.local/state/vigil` and any `vigil decide` from an agent are treated as **self-approve** and denied.
 
@@ -214,7 +214,7 @@ Vigil is a **consent UI on the hooked path**. It is not a jail, a sandbox, or a 
 
 **Claims are advisory.** Agents that bypass tools can still stomp the same file.
 
-**Unhooked harnesses are not seated.** The bar can still list OpenCode, Codex, Cursor, and the rest. Panic can still kill those processes. Their tool calls are not held. See [Harnesses](#harnesses).
+**Unhooked harnesses are not seated.** The bar can still list Cursor, Copilot CLI, Crush, Antigravity, Hermes, and Ori. Panic can still kill those processes. Their tool calls are not held. See [Harnesses](#harnesses).
 
 **QML is Omarchy-only.** This tree is not a generic Linux daemon. Do not expect it to run as a service on Ubuntu or another distro.
 
@@ -246,16 +246,19 @@ These are not missing features. They are the product.
 
 These wait for you in seatbelt (and are denied if you do not answer):
 
-- `rm -rf /` and `$HOME`
-- `curl | sh` / `wget | bash`
+- `rm -rf /` and `$HOME` (including `--no-preserve-root`, split flags, quoted `$HOME`)
+- `curl | sh` / `wget | bash`, `bash <(curl …)`, `eval "$(curl …)"`
 - fork bombs
-- `mkfs`, `dd` to `/dev`
+- `mkfs`, `dd` / `shred` / `wipefs` to `/dev`
 - `chmod 777 /`
-- `git push --force` to `main` / `master`
+- `git push --force` to `main` / `master` (including `git -C`)
 - `hyprctl dispatch exit` / `killwindow` / `exec`
-- `omarchy plugin add|enable|remove|update`
+- `omarchy plugin add|enable|remove|update`, and writes under `~/.config/omarchy/plugins/`
 - `reboot` / `shutdown` / `poweroff`
-- `vigil decide` and writes under Vigil’s own state
+- `vigil decide` / `mode` / `unfreeze` / `install` / `uninstall` and writes under Vigil’s own state
+
+- secret writes (`~/.ssh`, keys) wait on a card even in seatbelt
+- MCP / unknown tools that carry a deadly shell command
 
 Everything else that looks risky waits in **ask** mode, and passes in **seatbelt**. Envelope `project` also holds writes outside that repo. Envelope `hermit` holds network and MCP. Envelope `read` holds writes.
 

@@ -15,6 +15,8 @@ YOLO is fine for ordinary work inside the lease: project edits, tests, in-repo g
 ## Do not
 
 - Do not run `vigil decide`. That is how a human answers a card. An agent answering its own card is blocked.
+- Do not run `vigil mode`, `vigil unfreeze`, `vigil install`, or `vigil uninstall`.
 - Do not write under `~/.local/state/vigil/` or `~/.config/vigil/`.
+- Do not write under `~/.config/omarchy/plugins/` or the Grok/Claude hook files.
 - Do not run `omarchy plugin add` / `enable` / `remove` unless the human already allowed that ticket.
 - Do not treat silence as permission. Silence is deny.

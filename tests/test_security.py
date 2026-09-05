@@ -75,6 +75,61 @@ class RmRootBypassTests(unittest.TestCase):
 
     def test_path_then_flags(self) -> None:
         self.assertEqual(classify(bash("rm / -rf")).class_id, "rm-root")
+        self.assertEqual(classify(bash("rm ~ -rf")).class_id, "rm-root")
+        self.assertEqual(classify(bash("rm /home/brwsk -rf")).class_id, "rm-root")
+        self.assertNotEqual(classify(bash("rm ~/.config -rf")).class_id, "rm-root")
+
+
+class RmRootExactHomeTests(unittest.TestCase):
+    """`~/.config/foo` is not delete of / or $HOME. Glass 2026-09-05."""
+
+    def test_home_subdir_is_destructive_not_rm_root(self) -> None:
+        samples = (
+            "rm -rf ~/.config/protonmail",
+            "rm -rf ~/.config/protonmail ~/.cache/protonmail ~/.local/share/protonmail",
+            "rm -rf /home/brwsk/.config/protonmail",
+            "rm -rf /home/brwsk/.config/protonmail /home/brwsk/.cache/protonmail /home/brwsk/.local/share/protonmail",
+            "rm -rf -- ~/.config/protonmail",
+            'rm -rf "/home/brwsk/.config/protonmail"',
+        )
+        for cmd in samples:
+            with self.subTest(cmd=cmd):
+                risk = classify(bash(cmd))
+                self.assertNotEqual(risk.class_id, "rm-root", cmd)
+                self.assertEqual(risk.class_id, "destructive", cmd)
+                self.assertEqual(risk.decision, ASK, cmd)
+
+    def test_exact_home_and_root_still_rm_root(self) -> None:
+        samples = (
+            "rm -rf /",
+            "rm -rf /*",
+            "rm -rf ~",
+            "rm -rf ~/",
+            "rm -rf ~/*",
+            "rm -rf $HOME",
+            "rm -rf $HOME/",
+            "rm -rf $HOME/*",
+            'rm -rf "$HOME"',
+            "rm -rf /home",
+            "rm -rf /home/",
+            "rm -rf /home/*",
+            "rm -rf /home/brwsk",
+            "rm -rf /home/brwsk/",
+            "rm -rf /home/brwsk/*",
+            "rm -rf /Users",
+        )
+        for cmd in samples:
+            with self.subTest(cmd=cmd):
+                risk = classify(bash(cmd))
+                self.assertEqual(risk.class_id, "rm-root", cmd)
+                self.assertEqual(risk.decision, DENY, cmd)
+
+    def test_other_recursive_deletes_stay_destructive(self) -> None:
+        for cmd in ("rm -rf /tmp/foo", "rm -rf /etc", "rm -rf build/"):
+            with self.subTest(cmd=cmd):
+                risk = classify(bash(cmd))
+                self.assertEqual(risk.class_id, "destructive", cmd)
+                self.assertEqual(risk.decision, ASK, cmd)
 
 
 class PipeShellBypassTests(unittest.TestCase):

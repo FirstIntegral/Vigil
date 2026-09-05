@@ -258,7 +258,7 @@ These are not missing features. They are the product.
 
 These wait for you in seatbelt (and are denied if you do not answer):
 
-- `rm -rf /` and `$HOME` (including `--no-preserve-root`, split flags, quoted `$HOME`)
+- `rm -rf /` and `$HOME` themselves (including `--no-preserve-root`, split flags, quoted `$HOME`, `/*` / `~/*` / `$HOME/*`). A subdirectory such as `~/.config/foo` is recursive-delete, not this class.
 - `curl | sh` / `wget | bash`, `bash <(curl …)`, `eval "$(curl …)"`
 - fork bombs
 - `mkfs`, `dd` / `shred` / `wipefs` to `/dev`

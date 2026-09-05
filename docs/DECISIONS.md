@@ -153,3 +153,9 @@
 - Identifiers stay lowercase: plugin id `xyz.brwsk.vigil`, CLI `bin/vigil`, Python package `vigil/`, XDG `~/.config/vigil` and `~/.local/state/vigil`, hook filenames. Omarchy live copy stays `~/.config/omarchy/plugins/xyz.brwsk.vigil/` (plugin id, not the GitHub title).
 - Supersedes the 2026-09-02 / 2026-09-05 reject of renaming the local folder. Those ADRs stay as history.
 - **Rejected:** renaming the plugin id, CLI, Python package, or XDG paths to `Vigil`.
+
+## 2026-09-05 rm-root is exact `/` or `$HOME`, not every path under them
+- Glass: OpenCode `rm -rf ~/.config/protonmail ~/.cache/protonmail ~/.local/share/protonmail`. Card said *Delete the filesystem*. User pressed **Y allow once**. Vigil audit: four `allow` / `Allowed once.` Then OpenCode still blocked (1config glob, separate ADR).
+- **Classifier bug:** `_ROOT_TARGET` was `/|~|/home|…` and the terminator allowed `/`. So `~` + `/` matched `~/.config/…`, and `/home` + `/` matched `/home/brwsk/…`. Any recursive delete under home was `rm-root`.
+- **Decision:** a root/home argument is complete only when the rest of that argv is trailing slashes, `.` / `..`, and/or `*`. `rm -rf /`, `~`, `~/*`, `$HOME`, `/home`, `/home/$USER`, `/home/$USER/*` stay DENY-class. `rm -rf ~/.config/foo` and `/home/brwsk/.config/foo` are `destructive` (silent in seatbelt). Version **0.6.1**.
+- **Rejected:** keeping the `/` terminator (false deadly card). Treating every `rm -rf` under `$HOME` as Article I (too wide; leftover config wipe is a real command).

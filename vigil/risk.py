@@ -90,28 +90,47 @@ _SAFE_BASH = re.compile(
     r"^git fetch\b|^git pull\b"
 )
 
-_ROOT_TARGET = (
-    r"(?:/|~|/home|/Users|\$HOME|\$\{HOME\}|"
-    r'"\$HOME"|\'\$HOME\'|"\$\{HOME\}"|\'\$\{HOME\}\')'
-)
-_RM_RF_ROOT = re.compile(
-    r"\brm\s+-[^\s]*[rf][^\s]*\s+(?:--\s+)?" + _ROOT_TARGET + r"(?:\s|/|\*|$)",
-    re.IGNORECASE,
-)
+# Complete / or $HOME argument — not a prefix of a subpath.
+# Old terminator `(?:\s|/|\*|$)` made `~/.config/foo` and `/home/brwsk/foo`
+# match as rm-root because `~` / `/home` plus a following `/` succeeded.
+_ROOT_TRAIL = r"(?:/+(?:\.\.?)?)*\*?"
 _RM_NOPRESERVE = re.compile(r"\brm\b[^\n]*--no-preserve-root", re.IGNORECASE)
-_RM_SPLIT_RF = re.compile(
-    r"\brm\s+(?:-[^\s]+\s+)*-[rR]\s+-[fF]\s+(?:--\s+)?" + _ROOT_TARGET + r"(?:\s|/|\*|$)"
-    r"|\brm\s+(?:-[^\s]+\s+)*-[fF]\s+-[rR]\s+(?:--\s+)?" + _ROOT_TARGET + r"(?:\s|/|\*|$)",
-    re.IGNORECASE,
-)
-_RM_PATH_THEN_FLAGS = re.compile(
-    r"\brm\s+" + _ROOT_TARGET + r"\s+-[^\s]*[rf]",
-    re.IGNORECASE,
-)
-_RM_R_ROOT = re.compile(
-    r"\brm\s+-[^\s]*r[^\s]*\s+(?:--\s+)?" + _ROOT_TARGET + r"(?:\s|/|\*|$)",
-    re.IGNORECASE,
-)
+_RM_ROOT_CACHE: tuple[str, tuple[re.Pattern[str], ...]] | None = None
+
+
+def _root_arg_src(home: str) -> str:
+    home_esc = re.escape(str(Path(home).expanduser()).rstrip("/"))
+    token = (
+        r"(?:\"\$\{HOME\}\"|'\$\{HOME\}'|\"\$HOME\"|'\$HOME'|"
+        r"\$\{HOME\}|\$HOME|~|"
+        + home_esc
+        + r"|/home/[^/\s'\"\\]+|/Users/[^/\s'\"\\]+|/home|/Users|/)"
+    )
+    arg = rf"(?:{token}{_ROOT_TRAIL}|\"{token}{_ROOT_TRAIL}\"|'{token}{_ROOT_TRAIL}')"
+    return arg + r"(?=\s|$|[;&|)])"
+
+
+def _rm_root_patterns(home: str | None = None) -> tuple[re.Pattern[str], ...]:
+    global _RM_ROOT_CACHE
+    h = str(Path(home or Path.home()).expanduser()).rstrip("/")
+    cached = _RM_ROOT_CACHE
+    if cached is not None and cached[0] == h:
+        return cached[1]
+    arg = _root_arg_src(h)
+    pats = (
+        re.compile(r"\brm\s+-[^\s]*[rf][^\s]*\s+(?:--\s+)?" + arg, re.IGNORECASE),
+        re.compile(
+            r"\brm\s+(?:-[^\s]+\s+)*-[rR]\s+-[fF]\s+(?:--\s+)?" + arg
+            + r"|\brm\s+(?:-[^\s]+\s+)*-[fF]\s+-[rR]\s+(?:--\s+)?" + arg,
+            re.IGNORECASE,
+        ),
+        re.compile(r"\brm\s+" + arg + r"\s+-[^\s]*[rf]", re.IGNORECASE),
+        re.compile(r"\brm\s+-[^\s]*r[^\s]*\s+(?:--\s+)?" + arg, re.IGNORECASE),
+    )
+    _RM_ROOT_CACHE = (h, pats)
+    return pats
+
+
 _MKFS = re.compile(r"\bmkfs(\.\w+)?\b", re.IGNORECASE)
 _DD_DEV = re.compile(r"\bdd\b[^\n]*\bof=/dev/", re.IGNORECASE)
 _DISK_SHRED = re.compile(
@@ -347,14 +366,10 @@ def _risk(
     )
 
 
-def _is_rm_root(cmd: str) -> bool:
-    return bool(
-        _RM_NOPRESERVE.search(cmd)
-        or _RM_RF_ROOT.search(cmd)
-        or _RM_SPLIT_RF.search(cmd)
-        or _RM_PATH_THEN_FLAGS.search(cmd)
-        or _RM_R_ROOT.search(cmd)
-    )
+def _is_rm_root(cmd: str, home: str | None = None) -> bool:
+    if _RM_NOPRESERVE.search(cmd):
+        return True
+    return any(pat.search(cmd) for pat in _rm_root_patterns(home))
 
 
 def _deadly(call: ToolCall, cmd: str) -> Risk | None:

@@ -24,7 +24,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This machine is Omarchy (hostname `omarchy`). Plugin `xyz.brwsk.vigil` is enabled. Session files are gitignored, so a fresh clone will not have `session_compact.md` — create it from the `create_project` template on first session here. Resume from `session_compact.md` (when present) + this file + `docs/DECISIONS.md`.
 
-Version **0.6.0**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Hooks auto-arm when the plugin is enabled.
+Version **0.6.1**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Hooks auto-arm when the plugin is enabled.
 
 1. GitHub SSH works on this box (`ssh -T git@github.com`).
 2. Plugin already added: `omarchy plugin list` shows `xyz.brwsk.vigil` enabled.

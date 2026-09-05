@@ -32,7 +32,10 @@ Panel {
   property int selectedIndex: 0
 
   readonly property color contentForeground: bar ? bar.foreground : Color.foreground
-  readonly property string contentFontFamily: bar ? bar.fontFamily : Style.font.family
+  // Bar family is JetBrainsMono Nerd Font — fine for the eye glyph, but a
+  // caption-sized Latin `m` paints as a filled box. Prose uses sans.
+  readonly property string contentFontFamily: "sans-serif"
+  readonly property string glyphFontFamily: bar ? bar.fontFamily : Style.font.family
   readonly property color surfaceColor: bar ? bar.background : Color.background
 
   onSessionsRevisionChanged: {
@@ -155,6 +158,53 @@ Panel {
     return (n / (1024 * 1024)).toFixed(1) + " MB"
   }
 
+  // Caption-sized `m` in JetBrains Mono paints as a filled box. Same chips
+  // as the key row (bold bodySmall, native render, no unicode in the run).
+  readonly property var heroHint: {
+    var mode = root.mode
+    var frozen = root.frozen
+    var hooks = root.hooksLive
+    var incident = root.incident
+    var waiting = root.waitingCount
+    var autoArm = root.service && root.service.autoArm !== false
+    if (!root.serviceReady) return [{ t: "scanning..." }]
+    if (!hooks) {
+      if (autoArm) return [{ t: "starting watch - new sessions will be seated" }]
+      return [{ t: "watching off" }, { k: "i", t: "start again" }]
+    }
+    if (incident) return [
+      { k: "u", t: "let them run" },
+      { k: "w", t: "restore files" },
+      { k: "n", t: "keep frozen" }
+    ]
+    if (mode === "off") return [
+      { t: "off - nothing is held" },
+      { k: "m", t: "cycles mode" },
+      { k: "esc", t: "closes" }
+    ]
+    if (frozen) return [
+      { t: "frozen" },
+      { k: "f", t: "or" },
+      { k: "m", t: "leaves this" },
+      { k: "esc", t: "closes" }
+    ]
+    if (mode === "ask") return [
+      { t: "ask - risky calls wait" },
+      { k: "m", t: "back to seatbelt" },
+      { k: "esc", t: "closes" }
+    ]
+    if (waiting > 0) return [
+      { k: "y", t: "allow once" },
+      { k: "n", t: "deny" },
+      { k: "a", t: "always this class" }
+    ]
+    return [
+      { t: "seatbelt (default)" },
+      { k: "esc", t: "closes" },
+      { k: "m", t: "cycles mode" }
+    ]
+  }
+
   KeyboardPanel {
     id: panel
     anchorItem: root.anchorItem
@@ -193,7 +243,8 @@ Panel {
             id: heroIcon
             text: root.service ? root.service.glyph : "󰈈"
             color: root.waitingCount > 0 ? Color.accent : root.contentForeground
-            font.family: root.contentFontFamily
+            font.family: root.glyphFontFamily
+            renderType: Text.NativeRendering
             font.pixelSize: Style.fontPx(2.4)
             anchors.left: parent.left
             anchors.top: parent.top
@@ -220,33 +271,42 @@ Panel {
                     : (root.agentCount + (root.agentCount === 1 ? " agent" : " agents")))))
               color: root.contentForeground
               font.family: root.contentFontFamily
+              renderType: Text.NativeRendering
               font.pixelSize: Style.fontPx(1.4)
               font.bold: true
               elide: Text.ElideRight
               width: parent.width
             }
 
-            Text {
-              text: {
-                if (!root.serviceReady) return "scanning…"
-                if (!root.hooksLive) {
-                  if (root.service && root.service.autoArm !== false)
-                    return "starting watch — new agent sessions will be seated"
-                  return "watching off — press i to start again"
-                }
-                if (root.incident) return "U let them run · W restore files · N keep frozen"
-                if (root.mode === "off") return "off — nothing is held. m cycles mode · Esc closes"
-                if (root.frozen) return "frozen — f or m leaves this. Esc closes"
-                if (root.mode === "ask") return "ask — risky calls wait. m back to seatbelt · Esc closes"
-                if (root.waitingCount > 0) return "Y allow once · N deny · A always this class"
-                return "seatbelt (default) — Esc closes · m cycles mode"
-              }
-              color: Qt.darker(root.contentForeground, 1.4)
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
-              font.bold: true
-              elide: Text.ElideRight
+            Flow {
               width: parent.width
+              spacing: Style.space(10)
+
+              Repeater {
+                model: root.heroHint
+                Row {
+                  required property var modelData
+                  spacing: Style.space(4)
+                  Text {
+                    visible: !!(modelData.k)
+                    text: modelData.k || ""
+                    color: root.contentForeground
+                    opacity: 0.75
+                    font.family: root.contentFontFamily
+                    renderType: Text.NativeRendering
+                    font.pixelSize: Style.font.bodySmall
+                    font.bold: true
+                  }
+                  Text {
+                    text: modelData.t || ""
+                    color: root.contentForeground
+                    opacity: 0.55
+                    font.family: root.contentFontFamily
+                    renderType: Text.NativeRendering
+                    font.pixelSize: Style.font.bodySmall
+                  }
+                }
+              }
             }
           }
         }
@@ -256,6 +316,7 @@ Panel {
           text: root.killStatus
           color: root.pendingKill ? Color.accent : root.contentForeground
           font.family: root.contentFontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.caption
           wrapMode: Text.Wrap
           width: parent.width
@@ -284,6 +345,7 @@ Panel {
                 text: String(modelData.title || "Approval needed")
                 color: root.contentForeground
                 font.family: root.contentFontFamily
+                renderType: Text.NativeRendering
                 font.pixelSize: Style.font.bodySmall
                 font.bold: true
                 wrapMode: Text.Wrap
@@ -294,6 +356,7 @@ Panel {
                 color: root.contentForeground
                 opacity: 0.65
                 font.family: root.contentFontFamily
+                renderType: Text.NativeRendering
                 font.pixelSize: Style.font.caption
                 wrapMode: Text.Wrap
                 width: parent.width
@@ -318,6 +381,7 @@ Panel {
           color: root.contentForeground
           opacity: 0.45
           font.family: root.contentFontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.caption
           width: parent.width
         }
@@ -332,6 +396,7 @@ Panel {
           color: root.contentForeground
           opacity: 0.45
           font.family: root.contentFontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.caption
           elide: Text.ElideMiddle
           width: parent.width
@@ -343,6 +408,7 @@ Panel {
           color: root.contentForeground
           opacity: 0.45
           font.family: root.contentFontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.caption
           elide: Text.ElideMiddle
           width: parent.width
@@ -354,6 +420,7 @@ Panel {
           color: root.contentForeground
           opacity: 0.5
           font.family: root.contentFontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.bodySmall
           wrapMode: Text.Wrap
           width: parent.width
@@ -399,6 +466,7 @@ Panel {
                   text: String(modelData.displayName || modelData.agent)
                   color: root.contentForeground
                   font.family: root.contentFontFamily
+                  renderType: Text.NativeRendering
                   font.pixelSize: Style.font.bodySmall
                   font.bold: true
                 }
@@ -407,6 +475,7 @@ Panel {
                   color: root.contentForeground
                   opacity: 0.55
                   font.family: root.contentFontFamily
+                  renderType: Text.NativeRendering
                   font.pixelSize: Style.font.caption
                   anchors.verticalCenter: parent.verticalCenter
                 }
@@ -415,6 +484,7 @@ Panel {
                   color: String(modelData.status) === "waiting" ? Color.accent : root.contentForeground
                   opacity: 0.7
                   font.family: root.contentFontFamily
+                  renderType: Text.NativeRendering
                   font.pixelSize: Style.font.caption
                   anchors.verticalCenter: parent.verticalCenter
                 }
@@ -438,6 +508,7 @@ Panel {
                 color: root.contentForeground
                 opacity: 0.55
                 font.family: root.contentFontFamily
+                renderType: Text.NativeRendering
                 font.pixelSize: Style.font.caption
                 elide: Text.ElideMiddle
                 width: parent.width
@@ -450,29 +521,42 @@ Panel {
 
         Flow {
           width: parent.width
-          spacing: Style.space(10)
+          spacing: Style.space(12)
 
           Repeater {
             model: [
-              "esc close",
-              "j/k move",
-              "x kill",
-              "f freeze",
-              "p panic",
-              "m mode",
-              "i hooks",
-              "e lease",
-              "r refresh",
-              "w rewind",
-              "l lid"
+              ["esc", "close"],
+              ["j/k", "move"],
+              ["x", "kill"],
+              ["f", "freeze"],
+              ["p", "panic"],
+              ["m", "mode"],
+              ["i", "hooks"],
+              ["e", "lease"],
+              ["r", "refresh"],
+              ["w", "rewind"],
+              ["l", "lid"]
             ]
-            Text {
-              required property string modelData
-              text: modelData
-              color: root.contentForeground
-              opacity: 0.4
-              font.family: root.contentFontFamily
-              font.pixelSize: Style.font.caption
+            Row {
+              required property var modelData
+              spacing: Style.space(4)
+              Text {
+                text: modelData[0]
+                color: root.contentForeground
+                opacity: 0.75
+                font.family: root.contentFontFamily
+                renderType: Text.NativeRendering
+                font.pixelSize: Style.font.bodySmall
+                font.bold: true
+              }
+              Text {
+                text: modelData[1]
+                color: root.contentForeground
+                opacity: 0.5
+                font.family: root.contentFontFamily
+                renderType: Text.NativeRendering
+                font.pixelSize: Style.font.bodySmall
+              }
             }
           }
         }

@@ -35,7 +35,8 @@ Item {
   property color scrim: Color.polkit.scrim
   readonly property int cornerRadius: Style.cornerRadius
   property int contentMargin: Style.spacing.panelPadding
-  property string fontFamily: Style.font.menuFamily
+  property string fontFamily: "sans-serif"
+  property string glyphFontFamily: Style.font.menuFamily
 
   function open(payloadJson) {
     // Raise the card. Content and id come from pending files, not IPC JSON.
@@ -139,6 +140,7 @@ Item {
         text: root.current ? String(root.current.title || "Authentication is needed") : ""
         color: root.foreground
         font.family: root.fontFamily
+        renderType: Text.NativeRendering
         font.pixelSize: Style.font.bodySmall
         horizontalAlignment: Text.AlignHCenter
         verticalAlignment: Text.AlignVCenter
@@ -200,7 +202,8 @@ Item {
         Text {
           text: "\uf023"
           color: root.accent
-          font.family: root.fontFamily
+          font.family: root.glyphFontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.iconLarge
         }
 
@@ -210,6 +213,7 @@ Item {
           color: root.foreground
           opacity: 0.7
           font.family: root.fontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.bodySmall
           wrapMode: Text.Wrap
           width: parent.width
@@ -221,6 +225,7 @@ Item {
           text: root.current ? String(root.current.article || "") : ""
           color: root.accent
           font.family: root.fontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.caption
           wrapMode: Text.Wrap
           width: parent.width
@@ -231,6 +236,7 @@ Item {
           text: root.current ? String(root.current.summary || "") : ""
           color: root.foreground
           font.family: root.fontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.bodySmall
           wrapMode: Text.Wrap
           width: parent.width
@@ -243,6 +249,7 @@ Item {
           color: root.foreground
           opacity: 0.55
           font.family: root.fontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.caption
           wrapMode: Text.Wrap
           width: parent.width
@@ -263,6 +270,7 @@ Item {
           color: root.foreground
           opacity: 0.36
           font.family: root.fontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.caption
           elide: Text.ElideMiddle
           width: parent.width
@@ -277,6 +285,7 @@ Item {
           color: root.foreground
           opacity: 0.36
           font.family: root.fontFamily
+          renderType: Text.NativeRendering
           font.pixelSize: Style.font.caption
           width: parent.width
         }

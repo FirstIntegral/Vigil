@@ -141,3 +141,8 @@
 - **Decision:** Omarchy-shell (not an agent) auto-runs `vigil install` the first time the service sees hooks missing **and** `policy.autoArm` is true (default). Uninstall sets `autoArm=false` so we do not fight a human who disarmed. Press `i` to arm again. Disable the plugin to stop watching.
 - The 2026-09-01 reject of “auto-installing into the live session that is building this” still holds: this Grok chat is not the installer. The shell is.
 - **Rejected:** asking for `i` on every login; re-arming immediately after uninstall in the same breath.
+
+## 2026-09-05 Panel prose is sans-serif; Nerd Font is only the eye
+- User screenshot: the `m` in `m cycles mode` (and `move`, `/home`) was a filled box. ASCII `m` was in the QML. JetBrainsMono Nerd Font at caption size, through Qt's default distance-field renderer, fills the three stems. Bold caption made it worse. Omarchy's own `WidgetButton` / `OpticalGlyph` already set `Text.NativeRendering`.
+- **Decision:** `Text.NativeRendering` on panel and overlay copy. Shortcut legends are bold `bodySmall` chips (key + label), including the hero hint so `m cycles mode` uses the same `m` as the key row. Body/prose `font.family` is `sans-serif`. The eye and lock glyphs keep the bar/Nerd family. Live plugin at `~/.config/omarchy/plugins/xyz.brwsk.vigil/` was copied and the shell restarted; glass check showed three stems on `m`.
+- **Rejected:** leaving copy on the bar Nerd font; drawing a fake keycap; renaming the `m` shortcut.

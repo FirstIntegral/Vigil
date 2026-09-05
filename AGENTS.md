@@ -6,6 +6,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 ## Stack / Conventions
 - Python 3.11+, stdlib only. Tests via `unittest`.
 - QML for Omarchy plugin kinds `service` + `bar-widget`. Follow first-party / screen-time contracts: `BarWidget`, `WidgetButton`, `Panel`, `KeyboardPanel`, `qs.Ui`, `qs.Commons`.
+- Panel/overlay **prose** uses `sans-serif` + `Text.NativeRendering`. Nerd/bar family is only the eye and lock glyphs. Caption-sized Latin `m` in JetBrainsMono Nerd Font paints as a box. Shortcut legends are bold `bodySmall` chips (key + label).
 - Plugin id `xyz.brwsk.vigil`. `omarchy.*` is reserved — never use it.
 - `manifest.json` must stay at the repo root (Omarchy installs by cloning a git repo with a root manifest).
 - No invented metrics. `todayUsd` stays `null` until a real ledger exists.

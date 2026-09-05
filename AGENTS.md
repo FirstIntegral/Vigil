@@ -13,7 +13,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 - Kill path re-classifies at signal time. Do not `pkill` by name.
 - Gate must **never** return harness `ask` — YOLO auto-approves it. Hold the hook, then `allow` or `deny`.
 - Alerts default to **both** (Omarchy bar + Omarchy toast). `t` cycles bar / toast / both. Tests and `VIGIL_SILENT=1` never toast.
-- Ask timeout is deny. Hook timeout in install is 120s.
+- Ask timeout is deny (default 300s). Hook timeout in install is 330s so Vigil denies before Grok/OpenCode fail-open.
 - Always mints a **ticket** (`t:agent:project:class`), not the full command string.
 - Agents must not call `vigil decide` or write `~/.local/state/vigil`. Those are DENY-class.
 - State dirs `0700`, files `0600`. Audit is hash-chained and redacted. No cloud.
@@ -24,7 +24,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This machine is Omarchy (hostname `omarchy`). Plugin `xyz.brwsk.vigil` is enabled. Session files are gitignored, so a fresh clone will not have `session_compact.md` — create it from the `create_project` template on first session here. Resume from `session_compact.md` (when present) + this file + `docs/DECISIONS.md`.
 
-Version **0.6.1**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Hooks auto-arm when the plugin is enabled.
+Version **0.6.2**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Hooks auto-arm when the plugin is enabled.
 
 1. GitHub SSH works on this box (`ssh -T git@github.com`).
 2. Plugin already added: `omarchy plugin list` shows `xyz.brwsk.vigil` enabled.

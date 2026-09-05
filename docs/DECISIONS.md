@@ -159,3 +159,8 @@
 - **Classifier bug:** `_ROOT_TARGET` was `/|~|/home|…` and the terminator allowed `/`. So `~` + `/` matched `~/.config/…`, and `/home` + `/` matched `/home/brwsk/…`. Any recursive delete under home was `rm-root`.
 - **Decision:** a root/home argument is complete only when the rest of that argv is trailing slashes, `.` / `..`, and/or `*`. `rm -rf /`, `~`, `~/*`, `$HOME`, `/home`, `/home/$USER`, `/home/$USER/*` stay DENY-class. `rm -rf ~/.config/foo` and `/home/brwsk/.config/foo` are `destructive` (silent in seatbelt). Version **0.6.1**.
 - **Rejected:** keeping the `/` terminator (false deadly card). Treating every `rm -rf` under `$HOME` as Article I (too wide; leftover config wipe is a real command).
+
+## 2026-09-05 Card window is 5 minutes
+- User: answering the polkit card felt short (it was 90s, hook 120s). Want a 5 minute window.
+- **Decision:** `ASK_WAIT_SEC = 300`. `HOOK_TIMEOUT_SEC = 330` (same 30s buffer as 90/120) so Vigil still denies before Grok/OpenCode fail-open. Policy default follows. Stored `timeoutSec: 90` (old default, no UI to pick it) migrates to 300 on load. Clamp max is 300. OpenCode plugin timeout is `HOOK_TIMEOUT_SEC * 1000` written at install. Stale hook files (timeout < 330) count as not installed so auto-arm rewrites them. Version **0.6.2**.
+- **Rejected:** 90s wait with a 330s hook (card still dies at 90). Raising wait without raising the hook (Grok would fail-open the call at 120s — worse than a short card). A 10 minute ceiling.

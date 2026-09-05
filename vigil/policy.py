@@ -9,7 +9,7 @@ from typing import Any
 
 from datetime import datetime, timezone
 
-from vigil import POLICY_SCHEMA
+from vigil import ASK_WAIT_SEC, POLICY_SCHEMA
 from vigil.notify import ALERTS, DEFAULT_ALERT
 from vigil.paths import policy_path, session_allow_path
 from vigil.risk import CRITICAL_CLASSES, Risk
@@ -17,6 +17,18 @@ from vigil.secure import write_private
 
 MODES = ("off", "seatbelt", "ask", "frozen")
 DEFAULT_MODE = "seatbelt"
+
+
+def _timeout_sec(raw: dict[str, Any]) -> int:
+    if "timeoutSec" not in raw:
+        return ASK_WAIT_SEC
+    try:
+        timeout_i = int(raw["timeoutSec"])
+    except (TypeError, ValueError):
+        return ASK_WAIT_SEC
+    if timeout_i == 90:
+        return ASK_WAIT_SEC
+    return max(5, min(ASK_WAIT_SEC, timeout_i))
 
 
 def _max_subagents(value: Any) -> int:
@@ -39,7 +51,7 @@ class Policy:
     mode: str = DEFAULT_MODE
     previous_mode: str = DEFAULT_MODE
     frozen: bool = False
-    timeout_sec: int = 90
+    timeout_sec: int = ASK_WAIT_SEC
     allow_keys: set[str] = field(default_factory=set)
     deny_keys: set[str] = field(default_factory=set)
     session_allow: dict[str, set[str]] = field(default_factory=dict)
@@ -202,12 +214,7 @@ def load_policy(home: Path) -> Policy:
     raw = _load_json(policy_path(home), {})
     if not isinstance(raw, dict):
         raw = {}
-    timeout = raw.get("timeoutSec", 90)
-    try:
-        timeout_i = int(timeout)
-    except (TypeError, ValueError):
-        timeout_i = 90
-    timeout_i = max(5, min(300, timeout_i))
+    timeout_i = _timeout_sec(raw)
     mode = str(raw.get("mode") or "")
     if mode not in MODES:
         mode = "frozen" if raw.get("frozen") else DEFAULT_MODE

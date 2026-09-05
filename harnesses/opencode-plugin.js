@@ -19,7 +19,7 @@ function runGate(eventName, tool, args, sessionId, directory) {
     result = spawnSync(HELPER, ["gate"], {
       input: payload,
       encoding: "utf8",
-      timeout: eventName === "post_tool_use" ? 5000 : 120000,
+      timeout: eventName === "post_tool_use" ? 5000 : __VIGIL_HOOK_TIMEOUT_MS__,
       maxBuffer: 1024 * 1024,
     })
   } catch {

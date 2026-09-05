@@ -62,7 +62,9 @@ def opencode_plugin_source(helper: str) -> str:
             break
     if not body:
         raise FileNotFoundError("missing harnesses/opencode-plugin.js")
-    return body.replace("__VIGIL_HELPER__", helper.replace("\\", "\\\\"))
+    return body.replace("__VIGIL_HELPER__", helper.replace("\\", "\\\\")).replace(
+        "__VIGIL_HOOK_TIMEOUT_MS__", str(HOOK_TIMEOUT_SEC * 1000)
+    )
 
 
 def codex_hook_document(helper: str) -> dict[str, Any]:
@@ -150,36 +152,76 @@ def strip_claude_hooks(settings: dict[str, Any], helper: str) -> dict[str, Any]:
     return out
 
 
+def _pretool_timeouts(doc: Any, helper: str) -> list[int]:
+    out: list[int] = []
+    if not isinstance(doc, dict):
+        return out
+    hooks = doc.get("hooks")
+    if not isinstance(hooks, dict):
+        return out
+    pre = hooks.get("PreToolUse")
+    if not isinstance(pre, list):
+        return out
+    for group in pre:
+        if not isinstance(group, dict):
+            continue
+        handlers = group.get("hooks")
+        if not isinstance(handlers, list):
+            continue
+        for handler in handlers:
+            if not _is_our_handler(handler, helper):
+                continue
+            try:
+                out.append(int(handler.get("timeout")))
+            except (TypeError, ValueError):
+                out.append(0)
+    return out
+
+
+def _json_hook_fresh(text: str, helper: str) -> bool:
+    if MARKER not in text and helper not in text:
+        return False
+    try:
+        doc = json.loads(text)
+    except json.JSONDecodeError:
+        return False
+    timeouts = _pretool_timeouts(doc, helper)
+    return bool(timeouts) and all(t >= HOOK_TIMEOUT_SEC for t in timeouts)
+
+
+def _opencode_hook_fresh(text: str, helper: str) -> bool:
+    if MARKER not in text and helper not in text:
+        return False
+    return str(HOOK_TIMEOUT_SEC * 1000) in text
+
+
 def hooks_installed(home: Path, helper: str) -> dict[str, bool]:
-    grok = grok_hook_path(home)
     grok_ok = False
+    grok = grok_hook_path(home)
     if grok.is_file():
         try:
-            grok_ok = MARKER in grok.read_text(encoding="utf-8")
+            grok_ok = _json_hook_fresh(grok.read_text(encoding="utf-8"), helper)
         except OSError:
             grok_ok = False
     claude_ok = False
     cpath = claude_settings_path(home)
     if cpath.is_file():
         try:
-            data = json.loads(cpath.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            data = {}
-        claude_ok = MARKER in json.dumps(data) or helper in json.dumps(data)
+            claude_ok = _json_hook_fresh(cpath.read_text(encoding="utf-8"), helper)
+        except OSError:
+            claude_ok = False
     opencode_ok = False
     opath = opencode_plugin_path(home)
     if opath.is_file():
         try:
-            obody = opath.read_text(encoding="utf-8")
-            opencode_ok = MARKER in obody or helper in obody
+            opencode_ok = _opencode_hook_fresh(opath.read_text(encoding="utf-8"), helper)
         except OSError:
             opencode_ok = False
     codex_ok = False
     xpath = codex_hooks_path(home)
     if xpath.is_file():
         try:
-            body = xpath.read_text(encoding="utf-8")
-            codex_ok = MARKER in body or helper in body
+            codex_ok = _json_hook_fresh(xpath.read_text(encoding="utf-8"), helper)
         except OSError:
             codex_ok = False
     return {"grok": grok_ok, "claude": claude_ok, "opencode": opencode_ok, "codex": codex_ok}

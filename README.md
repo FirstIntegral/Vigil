@@ -125,7 +125,7 @@ The bar lists these processes. Panic sends SIGTERM to every one of them. Freeze 
 
 | Harness | What `install` does |
 | --- | --- |
-| Grok | Always writes `~/.grok/hooks/vigil.json`. PreToolUse timeout is 120 seconds, PostToolUse is 5 seconds. Grok hooks fail *open* if the file is missing, the command crashes, or the timeout fires — Vigil denies the call before that 120 seconds. |
+| Grok | Always writes `~/.grok/hooks/vigil.json`. PreToolUse timeout is 330 seconds, PostToolUse is 5 seconds. The card waits 5 minutes. Grok hooks fail *open* if the file is missing, the command crashes, or the timeout fires — Vigil denies the call before that 330 seconds. |
 | Claude Code | Merges the same `vigil gate` command into `~/.claude/settings.json` **if that file already exists**. It does not create Claude settings from scratch. |
 | OpenCode | Always writes `~/.config/opencode/plugins/vigil.js`. OpenCode loads that directory at startup. The plugin spawns `vigil gate` and throws on deny. |
 | Codex | Always writes `~/.codex/hooks.json` (merges if the file already exists). Same Claude-shaped JSON as the gate already parses. |

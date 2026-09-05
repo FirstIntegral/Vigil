@@ -9,6 +9,7 @@ from typing import Any
 from vigil import HOOK_TIMEOUT_SEC, PLUGIN_ID
 from vigil.house import skill_markdown
 from vigil.machine import write as write_machine
+from vigil.policy import load_policy, save_policy
 from vigil.secure import write_private
 
 
@@ -236,6 +237,9 @@ def install(home: Path, helper: str) -> dict[str, str]:
     written["plugin"] = PLUGIN_ID
     written["helper"] = helper
     written["machine"] = str(write_machine(home))
+    policy = load_policy(home)
+    policy.auto_arm = True
+    save_policy(home, policy)
     return written
 
 
@@ -279,4 +283,8 @@ def uninstall(home: Path, helper: str) -> dict[str, str]:
                 removed["codex"] = f"removed {xpath}"
     else:
         removed["codex"] = "absent"
+    policy = load_policy(home)
+    policy.auto_arm = False
+    save_policy(home, policy)
+    removed["autoArm"] = "off"
     return removed

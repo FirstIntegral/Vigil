@@ -119,6 +119,7 @@ def build_snapshot(
         },
         "folders": list_folders(home),
         "trustUntilLock": policy.trust_until_lock,
+        "autoArm": policy.auto_arm,
         "totals": {
             "agents": len(sessions),
             "running": running,

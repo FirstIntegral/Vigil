@@ -50,6 +50,7 @@ class Policy:
     max_subagents: int = 2
     lid: bool = True
     lid_held: bool = False
+    auto_arm: bool = True
 
     def effective_mode(self) -> str:
         if self.frozen or self.mode == "frozen":
@@ -188,6 +189,7 @@ class Policy:
             "maxSubagents": max(0, min(32, int(self.max_subagents))),
             "lid": self.lid,
             "lidHeld": self.lid_held,
+            "autoArm": self.auto_arm,
             "allow": sorted(self.allow_keys),
             "deny": sorted(self.deny_keys),
         }
@@ -226,6 +228,7 @@ def load_policy(home: Path) -> Policy:
         max_subagents=_max_subagents(raw.get("maxSubagents", 2)),
         lid=raw.get("lid", True) is not False,
         lid_held=raw.get("lidHeld") is True,
+        auto_arm=raw.get("autoArm", True) is not False,
     )
     if policy.alert not in ALERTS:
         policy.alert = DEFAULT_ALERT

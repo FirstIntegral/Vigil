@@ -134,3 +134,10 @@
 - **Daily brief is the panel + `vigil brief`, not a blocking card.** A polkit card at 18:00 would stall YOLO. Away card already covers walk-away.
 - **Gemini + Oh My Pi** join the process census. Their tool calls stay unhooked (no hook API we can prove). Panic/lid can still stop the process.
 - Version **0.6.0**. No GitHub push until the user says so.
+
+## 2026-09-05 Auto-arm when the plugin is enabled
+- User: pressing `i` every time so the plugin “starts working” is annoying. They want it to just work.
+- `i` was already **once per machine**, not per session. Still a bad first-run: enable plugin, then a secret extra step.
+- **Decision:** Omarchy-shell (not an agent) auto-runs `vigil install` the first time the service sees hooks missing **and** `policy.autoArm` is true (default). Uninstall sets `autoArm=false` so we do not fight a human who disarmed. Press `i` to arm again. Disable the plugin to stop watching.
+- The 2026-09-01 reject of “auto-installing into the live session that is building this” still holds: this Grok chat is not the installer. The shell is.
+- **Rejected:** asking for `i` on every login; re-arming immediately after uninstall in the same breath.

@@ -28,6 +28,11 @@ class InstallTests(unittest.TestCase):
             self.assertFalse(path.exists())
             self.assertFalse((home / ".config" / "opencode" / "plugins" / "vigil.js").exists())
             self.assertFalse((home / ".codex" / "hooks.json").exists())
+            from vigil.policy import load_policy
+
+            self.assertFalse(load_policy(home).auto_arm)
+            install(home, helper)
+            self.assertTrue(load_policy(home).auto_arm)
 
     def test_install_writes_opencode_and_codex(self) -> None:
         with TemporaryDirectory() as tmp:

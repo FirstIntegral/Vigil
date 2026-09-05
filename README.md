@@ -90,15 +90,11 @@ Or over SSH:
 omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable
 ```
 
-Then arm the hooks once. Either:
+Enable the plugin. The bar starts watching on its own. You do not press `i` for a normal install.
 
-```
-python3 ~/.config/omarchy/plugins/xyz.brwsk.vigil/bin/vigil install
-```
+Restart the agent session so it loads the hook. Left-click the eye in the bar.
 
-or open the bar panel and press `i`.
-
-Restart the agent session so the hook actually loads. Left-click the eye in the bar.
+If you ran `vigil uninstall` on purpose, watching stays off until you press `i` (or run install from a human terminal).
 
 Do not arm hooks in a session you still need unblocked unless the overlay (or `vigil decide` from a **human** terminal) is ready to answer cards.
 

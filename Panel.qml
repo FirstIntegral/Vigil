@@ -229,13 +229,17 @@ Panel {
             Text {
               text: {
                 if (!root.serviceReady) return "scanning…"
-                if (!root.hooksLive) return "hooks off — press i to start watching tool calls"
+                if (!root.hooksLive) {
+                  if (root.service && root.service.autoArm !== false)
+                    return "starting watch — new agent sessions will be seated"
+                  return "watching off — press i to start again"
+                }
                 if (root.incident) return "U let them run · W restore files · N keep frozen"
-                if (root.mode === "off") return "off — nothing is held. m cycles mode"
-                if (root.frozen) return "frozen — every tool call is denied until you unfreeze"
-                if (root.mode === "ask") return "ask — risky calls wait for you"
+                if (root.mode === "off") return "off — nothing is held. m cycles mode · Esc closes"
+                if (root.frozen) return "frozen — f or m leaves this. Esc closes"
+                if (root.mode === "ask") return "ask — risky calls wait. m back to seatbelt · Esc closes"
                 if (root.waitingCount > 0) return "Y allow once · N deny · A always this class"
-                return "seatbelt — only deadly calls wait · alerts: " + root.alert
+                return "seatbelt (default) — Esc closes · m cycles mode"
               }
               color: Qt.darker(root.contentForeground, 1.4)
               font.family: root.contentFontFamily
@@ -444,128 +448,32 @@ Panel {
 
         Item { width: parent.width; height: Style.space(4) }
 
-        Row {
+        Flow {
           width: parent.width
-          spacing: Style.space(12)
+          spacing: Style.space(10)
 
-          Text {
-            text: "j/k move"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "x kill"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "a kill all"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "o open cwd"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "r refresh"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "f freeze"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "p panic"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "t alerts"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "h trust 1h"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "m mode"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "i arm hooks"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "e envelope"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "w rewind"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "l lid"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "v revoke ticket"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "g folder lease"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
-          }
-          Text {
-            text: "u trust till lock"
-            color: root.contentForeground
-            opacity: 0.4
-            font.family: root.contentFontFamily
-            font.pixelSize: Style.font.caption
+          Repeater {
+            model: [
+              "esc close",
+              "j/k move",
+              "x kill",
+              "f freeze",
+              "p panic",
+              "m mode",
+              "i hooks",
+              "e lease",
+              "r refresh",
+              "w rewind",
+              "l lid"
+            ]
+            Text {
+              required property string modelData
+              text: modelData
+              color: root.contentForeground
+              opacity: 0.4
+              font.family: root.contentFontFamily
+              font.pixelSize: Style.font.caption
+            }
           }
         }
       }

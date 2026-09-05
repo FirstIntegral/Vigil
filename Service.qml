@@ -41,6 +41,8 @@ Item {
   property var tickets: ({ allow: [], deny: [] })
   property var folders: []
   property bool trustUntilLock: false
+  property bool autoArm: true
+  property bool autoInstallAttempted: false
   property string _stdout: ""
   property string _stderr: ""
   property string lastError: ""
@@ -121,6 +123,7 @@ Item {
       tickets = data.tickets || { allow: [], deny: [] }
       folders = Array.isArray(data.folders) ? data.folders : []
       trustUntilLock = data.trustUntilLock === true
+      autoArm = data.autoArm !== false
       var hooks = data.hooks || {}
       grokHook = hooks.grok === true
       claudeHook = hooks.claude === true
@@ -142,6 +145,10 @@ Item {
       else if (agentCount === 0) message = "No coding agents running."
       else message = ""
       lastError = ""
+      if (!root.hooksLive && root.autoArm && !root.autoInstallAttempted && !actionProc.running) {
+        root.autoInstallAttempted = true
+        root.installHooks()
+      }
     } catch (error) {
       state = "error"
       message = "Vigil returned an unreadable snapshot."

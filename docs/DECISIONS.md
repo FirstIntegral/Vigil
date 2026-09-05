@@ -36,7 +36,7 @@
 - Language for the hot path: `vigil gate` is spawned on every tool call. Python cold-start is tens of ms. **Rust** is the right next binary (lowest RSS, no GC, ~5–15ms). Go is the runner-up (faster to write, ~8MB RSS). QML stays QML (Omarchy). No rustc/go on this box, so the gate stays Python until a machine that can compile. Rejected: rewriting QML in something else; a daemon this turn (right idea, extra moving part before Omarchy install).
 
 ## 2026-09-02 Private GitHub remote
-- User asked for a private GitHub repo and a push. Remote is `git@github.com:FirstIntegral/vigil.git`. `AGENTS.md` `## Repo` updated the same turn. Checkpoint still never creates remotes; this one is an explicit human request.
+- User asked for a private GitHub repo and a push. Remote was created as `git@github.com:FirstIntegral/vigil.git` (GitHub later renamed the repo `Vigil`). `AGENTS.md` `## Repo` updated the same turn. Checkpoint still never creates remotes; this one is an explicit human request.
 
 ## 2026-09-02 Vigil is the constitution, not a second product
 - User: do it all — tickets, passports, envelopes, ghosts, lid, rewind, claims, MCP classes — Omarchy style, security and privacy, then push with a README that states capabilities, limits, and by-design.
@@ -52,8 +52,8 @@
 
 ## 2026-09-02 GitHub SSH uses the xigmatic linux key
 - This ThinkPad's `id_rsa` (`brwsk@thinkpad`) is not on GitHub. The account already has the desktop key `brwsk@xigmatic`.
-- **Decision:** `~/.ssh/id_ed25519` is that key. `Host github.com` uses it with `IdentitiesOnly yes`. ThinkPad `id_rsa` stays only for `polygonrizz-vps`. Vigil `origin` is `git@github.com:FirstIntegral/vigil.git`.
-- **Rejected:** uploading the ThinkPad rsa as a new GitHub user key; a vigil-only deploy key; rewriting `git@` to HTTPS.
+- **Decision:** `~/.ssh/id_ed25519` is that key. `Host github.com` uses it with `IdentitiesOnly yes`. ThinkPad `id_rsa` stays only for `polygonrizz-vps`. Vigil `origin` is `git@github.com:FirstIntegral/Vigil.git`.
+- **Rejected:** uploading the ThinkPad rsa as a new GitHub user key; a Vigil-only deploy key; rewriting `git@` to HTTPS.
 
 ## 2026-09-02 Omarchy test isolation
 - First run of `scripts/test.sh` on this Omarchy box failed two fixtures written on Ubuntu: rewind's `git commit` inherited global `commit.gpgsign` and popped pinentry; `test_empty_without_hyprctl` did not stub `hyprctl` and listed the live foot window as a ghost.
@@ -114,3 +114,10 @@
 - Follow-up to the 0.5.4 review. User: fix everything, push, fix this machine.
 - **Decision:** collapse `'a'+'b'` before regex so split-string state writes still match; `bash /tmp/…` / `python3 /tmp/…` is DENY-class `run-tmp`; `python` plus urllib/exec and `base64 | sh` are pipe-shell. `vigil install` writes `~/.config/opencode/plugins/vigil.js` (auto-loaded, no edit of opencode.jsonc) and `~/.codex/hooks.json`. Cursor and the rest stay unwired. Version stays **0.5.4** (never left the machine).
 - **Rejected:** holding every `curl -o` in seatbelt (nanny); editing 1config’s `opencode.jsonc` to list the plugin.
+
+## 2026-09-05 Session compact starts on this Omarchy box; origin casing
+- This desktop (hostname `omarchy`) is the live Omarchy machine. Plugin `xyz.brwsk.vigil` was already enabled. `session_compact.md` / `session_transcript.md` are gitignored, so the clone had none — that is why continue_project found no compact. They start today in the `create_project` template format. Still never committed.
+- GitHub repo name is already `FirstIntegral/Vigil`. The *plugin* checkout's `origin` was still `git@github.com:FirstIntegral/vigil.git` (the name before the GitHub rename). Set-url to `Vigil.git`. The dev clone at `~/Projects/vigil` was already correct. Identifiers stay lowercase: plugin id, `bin/vigil`, Python package, `~/.config/vigil`, hook filenames.
+- Away-card `agent` field was `"vigil"` and showed on glass. Now `"Vigil"`. CLI `prog=vigil`, stderr prefix, and paths stay lowercase.
+- Hooks were not armed on this box. `vigil install` is refused from an agent pid (self-approve). Arm from a human terminal, or press `i` on the bar, using the plugin tree so the helper path is the live copy.
+- **Rejected:** renaming the local directory, plugin id, CLI, or hook files; committing session files; writing hook files from this agent session.

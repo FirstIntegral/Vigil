@@ -30,7 +30,9 @@ class LidTests(unittest.TestCase):
             state = sync(home, locked=False)
             self.assertTrue(state["away"])
             pending = list_pending(home)
-            self.assertTrue(any(row.get("kind") == "away" for row in pending))
+            away = [row for row in pending if row.get("kind") == "away"]
+            self.assertTrue(away)
+            self.assertEqual(away[0].get("agent"), "Vigil")
             self.assertEqual(load_policy(home).effective_mode(), "frozen")
 
     def test_omarchy_shell_islocked_true(self) -> None:

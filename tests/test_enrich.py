@@ -29,7 +29,7 @@ class EnrichTests(unittest.TestCase):
         self.assertEqual(claude_project_dir_name("/home/brwsk"), "-home-brwsk")
         self.assertEqual(
             claude_project_dir_name("/home/brwsk/Projects/vigil"),
-            "-home-brwsk-projects-vigil",
+            "-home-brwsk-Projects-vigil",
         )
 
     def test_grok_model_from_config(self) -> None:

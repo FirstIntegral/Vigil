@@ -181,7 +181,7 @@ def write_away(home: Path) -> Path:
         "kind": "away",
         "createdAt": "",
         "expiresAt": "",
-        "agent": "vigil",
+        "agent": "Vigil",
         "title": "Agents were frozen while the screen was locked",
         "reason": "Locking the session froze every coding agent. Unlocking does not start them again. Press U to let them run, W to restore files they changed, or N to keep them frozen.",
         "summary": f"{counts.get('tools') or 0} tool calls today, {len(files)} files touched",

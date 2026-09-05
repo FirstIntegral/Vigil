@@ -21,15 +21,15 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 ## Continue here (Omarchy)
 
-This Ubuntu box never armed hooks. The next session is on a real Omarchy machine. Session files are gitignored, so a fresh clone will not have `session_compact.md`. Resume from this file + `docs/DECISIONS.md`.
+This machine is Omarchy (hostname `omarchy`). Plugin `xyz.brwsk.vigil` is enabled. Session files are gitignored, so a fresh clone will not have `session_compact.md` — create it from the `create_project` template on first session here. Resume from `session_compact.md` (when present) + this file + `docs/DECISIONS.md`.
 
 Version **0.5.4**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only).
 
-1. GitHub SSH must work on that machine for pushing; cloning is public.
-2. Install the plugin:
-   `omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable`
-   Live copy lands under `~/.config/omarchy/plugins/xyz.brwsk.vigil/`. For code changes you can also clone to `~/Projects/vigil`; the plugin tree is what Omarchy loads.
-3. Arm hooks once: open the eye in the bar and press `i`, or
+1. GitHub SSH works on this box (`ssh -T git@github.com`).
+2. Plugin already added: `omarchy plugin list` shows `xyz.brwsk.vigil` enabled.
+   Live copy: `~/.config/omarchy/plugins/xyz.brwsk.vigil/` (what Omarchy loads).
+   Dev clone: `~/Projects/vigil`. Keep the plugin tree's `origin` as `git@github.com:FirstIntegral/Vigil.git` (capital V).
+3. Arm hooks once from a **human** terminal (agents are refused): open the eye in the bar and press `i`, or
    `python3 ~/.config/omarchy/plugins/xyz.brwsk.vigil/bin/vigil install`
 4. Restart the agent session so the hook loads.
 5. Prove the loop on glass:

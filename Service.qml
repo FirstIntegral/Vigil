@@ -38,6 +38,9 @@ Item {
   property bool incident: false
   property var lid: ({ enabled: true, locked: false, held: false })
   property var audit: []
+  property var tickets: ({ allow: [], deny: [] })
+  property var folders: []
+  property bool trustUntilLock: false
   property string _stdout: ""
   property string _stderr: ""
   property string lastError: ""
@@ -115,6 +118,9 @@ Item {
         severity = "ok"
       }
       audit = Array.isArray(data.audit) ? data.audit : []
+      tickets = data.tickets || { allow: [], deny: [] }
+      folders = Array.isArray(data.folders) ? data.folders : []
+      trustUntilLock = data.trustUntilLock === true
       var hooks = data.hooks || {}
       grokHook = hooks.grok === true
       claudeHook = hooks.claude === true
@@ -250,6 +256,24 @@ Item {
 
   function cycleLid() {
     actionProc.command = [helperPath(), "lid", "cycle"]
+    actionProc.running = true
+  }
+
+  function revokeTicket(key) {
+    if (!key) return
+    actionProc.command = [helperPath(), "tickets", "revoke", String(key)]
+    actionProc.running = true
+  }
+
+  function setFolder(path, envelope) {
+    if (!path) return
+    var env = envelope ? String(envelope) : "project"
+    actionProc.command = [helperPath(), "folder", String(path), env]
+    actionProc.running = true
+  }
+
+  function trustUntilLockScreen() {
+    actionProc.command = [helperPath(), "trust", "--until-lock"]
     actionProc.running = true
   }
 

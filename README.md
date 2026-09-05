@@ -48,6 +48,20 @@ Pressing **A** no longer saves the whole command string. It mints a **ticket**: 
 
 **House law.** Five short articles, quoted on the card, also installed as a skill the agent can read. They are reminders, not a second policy engine.
 
+**Folder lease.** A human can pin a folder to a tighter envelope (`vigil folder ~/Work/secret hermit --exclusive`). Longest prefix wins. Exclusive means a second agent waits before writing. Default is shared, so two agents in one repo still work.
+
+**Tickets you can see.** The panel lists Always tickets. Press `v` to revoke the first one, or `vigil tickets revoke <key>` from a human terminal.
+
+**Today's note.** The panel shows today's counts. `vigil brief` and `vigil log` print the same numbers. This is not a popup that blocks work.
+
+**Trust until lock.** Press `u`, or `vigil trust --until-lock`. Deadly calls still stop. Locking the screen ends the trust window.
+
+**Pause on freeze.** Lock or Panic still freezes hooked calls. Freeze also sends SIGSTOP to every classified agent, including ones without a hook. Unlocking does not continue them. Unfreeze does.
+
+**Net-only cage (optional).** `vigil spawn --exec --cage` drops the network namespace with bubblewrap. The filesystem is not jailed. If bwrap is missing, that command fails instead of pretending.
+
+**Machine card.** `~/.config/vigil/MACHINE.md` — a short note the agent may read. It is not a second policy engine.
+
 ## Modes
 
 Press `m` to cycle. There are four global modes:
@@ -104,10 +118,12 @@ Vigil does two different jobs. Do not mix them up.
 | `copilot` | Copilot CLI |
 | `crush` | Crush |
 | `agy` | Antigravity |
+| `gemini` | Gemini |
+| `omp` | Oh My Pi |
 | `hermes` | Hermes |
 | `ori` | Ori |
 
-The bar lists these processes. Panic sends SIGTERM to every one of them. Lid freeze is a *gate* mode: only a hooked harness stops; an unhooked Cursor pane keeps working while the screen is locked. A process Vigil does not name is invisible here: ChatGPT in a browser, Gemini, a Cursor GUI with no `cursor-agent` binary, and anything else.
+The bar lists these processes. Panic sends SIGTERM to every one of them. Freeze and lock also SIGSTOP every classified process, including ones with no hook. Unlocking does not continue them. Unfreeze does. A process Vigil does not name is still invisible here: ChatGPT in a browser, a Cursor GUI with no `cursor-agent` binary, and anything else.
 
 **The seatbelt sits on a hook.** That is a PreToolUse / PostToolUse command the *harness* has to load. `vigil install` (panel `i`) writes only these:
 

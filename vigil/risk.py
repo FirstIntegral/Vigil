@@ -562,8 +562,10 @@ def classify(call: ToolCall) -> Risk:
             ASK,
             "subagent",
             "Spawn another agent",
-            call.summary + " The child starts with an empty session wallet and does not inherit Always tickets.",
+            call.summary
+            + " The child starts with an empty session wallet. Spawning a helper waits even in seatbelt.",
             blast="child wallet empty",
+            hold=True,
         )
 
     if call.tool == "mcp":

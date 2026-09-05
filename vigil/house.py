@@ -57,7 +57,7 @@ def skill_markdown() -> str:
             "## Do not",
             "",
             "- Do not run `vigil decide`. That is how a human answers a card.",
-            "- Do not run `vigil mode`, `vigil unfreeze`, `vigil install`, or `vigil uninstall`.",
+            "- Do not run `vigil mode`, `vigil unfreeze`, `vigil install`, `vigil uninstall`, `vigil tickets`, or `vigil folder`.",
             "- Do not write under `~/.local/state/vigil/` or `~/.config/vigil/`.",
             "- Do not write under `~/.config/omarchy/plugins/` or hook files.",
             "- Do not run `omarchy plugin add` unless the human already allowed it.",

@@ -121,3 +121,16 @@
 - Away-card `agent` field was `"vigil"` and showed on glass. Now `"Vigil"`. CLI `prog=vigil`, stderr prefix, and paths stay lowercase.
 - Hooks were not armed on this box. `vigil install` is refused from an agent pid (self-approve). Arm from a human terminal, or press `i` on the bar, using the plugin tree so the helper path is the live copy.
 - **Rejected:** renaming the local directory, plugin id, CLI, or hook files; committing session files; writing hook files from this agent session.
+
+## 2026-09-05 Constitution 0.6 — all six rooms, still a plugin
+- User: build the 2-year vision, plan + second-guess + security audit, keep it fast, test here, **do not push** until they approve.
+- **Still one product.** Same loop (hold, card, ticket). Do not become herdr / `omarchy.agents` / omaharness / polkit / lock. Plugin id stays `xyz.brwsk.vigil`.
+- **Speed, second-guessed:** no gate daemon (new socket is a new allow-path; 20 MiB RSS always-on). Hot path stays one Python `gate` spawn. Snapshot stays one JSON. No `hyprctl` on the 2 s poll. Folder/ticket/owner reads are small JSON.
+- **Rejected PATH wrap of `omarchy-agent`:** `~/.local/bin` sits in front of `/usr/share/omarchy/bin`. A wrapper that gets flags wrong breaks every agent keybinding. Papers are stamped on the next snapshot (≤2 s) and on the first hooked tool call. Honest, not a shadow binary.
+- **Rejected Landlock/full bwrap FS jail:** easy to look like a cage and still leak Wayland/mise/home config, or to break the agent. Optional `--cage` on `vigil spawn --exec` is **net-only**: `bwrap --unshare-net --dev-bind / /`. Fail closed if `--cage` is set and bwrap is missing. Default spawn does not cage. Envelope remains the gate sticker.
+- **Lid freeze now SIGSTOP/SIGCONT** classified agents (same inspect as kill: pid>1, same uid, re-classify, no protected comms). Unlock still does not resume; unfreeze does. Tests never signal live pids (`unittest` short-circuit, injected fn).
+- **Folder envelopes** in `~/.config/vigil/folders.json` (human-only). Longest prefix, resolved paths, tighter of folder vs passport wins. `exclusive` is opt-in so a Herdr two-AI layout still works by default.
+- **Subagent wallet:** spawning a child is held even in seatbelt (hold=True). Default max 2 children per parent per day; Always tickets still keyed by agent×project×class (cannot see a nested session_id — documented limit). Deny-always still applies to children.
+- **Daily brief is the panel + `vigil brief`, not a blocking card.** A polkit card at 18:00 would stall YOLO. Away card already covers walk-away.
+- **Gemini + Oh My Pi** join the process census. Their tool calls stay unhooked (no hook API we can prove). Panic/lid can still stop the process.
+- Version **0.6.0**. No GitHub push until the user says so.

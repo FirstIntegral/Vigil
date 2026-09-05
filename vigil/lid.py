@@ -99,12 +99,17 @@ def sync(
     if not policy.lid:
         return result
     if locked_now and policy.effective_mode() != "frozen":
+        if policy.trust_until_lock:
+            policy.clear_trust()
         policy.freeze()
         policy.lid_held = True
         save_policy(home, policy)
         write_private(state_dir(home) / "lid.json", '{"locked":true}\n')
         result["lidHeld"] = True
         result["frozen"] = True
+        from vigil.pause import pause_all
+
+        result["paused"] = pause_all(home)
         return result
     if (not locked_now) and policy.lid_held:
         pending = list_pending(home)

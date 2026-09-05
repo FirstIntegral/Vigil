@@ -43,3 +43,19 @@ def cow_dir(home: Path) -> Path:
 
 def chain_meta_path(home: Path) -> Path:
     return state_dir(home) / "audit.chain"
+
+
+def folders_path(home: Path) -> Path:
+    return config_dir(home) / "folders.json"
+
+
+def machine_path(home: Path) -> Path:
+    return config_dir(home) / "MACHINE.md"
+
+
+def paused_path(home: Path) -> Path:
+    return state_dir(home) / "paused.json"
+
+
+def children_path(home: Path) -> Path:
+    return state_dir(home) / "children.json"

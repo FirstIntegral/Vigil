@@ -59,10 +59,15 @@ def upsert(
     model: str = "",
     host: str = "",
     envelope: str | None = None,
+    parent: str = "",
+    inherit_tickets: bool | None = None,
 ) -> dict[str, Any]:
     pid_key = make_id(agent, session_id, pid)
     existing = load(home, pid_key) or {}
     root = cwd.rstrip("/")
+    inherit = existing.get("inheritTickets", True)
+    if inherit_tickets is not None:
+        inherit = bool(inherit_tickets)
     row = {
         "id": pid_key,
         "agent": agent,
@@ -75,7 +80,8 @@ def upsert(
         ),
         "model": model or existing.get("model") or "",
         "status": "running",
-        "parent": existing.get("parent") or "",
+        "parent": parent or existing.get("parent") or "",
+        "inheritTickets": bool(inherit),
         "startedAt": existing.get("startedAt") or _now(),
         "host": host or existing.get("host") or "",
         "updatedAt": _now(),

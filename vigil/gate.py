@@ -29,7 +29,10 @@ from vigil.policy import Policy, load_policy, save_policy
 from vigil.claims import claim as take_claim
 from vigil.claims import conflict as claim_conflict
 from vigil.envelope import apply_envelope
-from vigil.passport import envelope_for, make_id, upsert as upsert_passport
+from vigil.folders import envelope_for_cwd, is_exclusive
+from vigil.passport import envelope_for, list_passports, make_id, upsert as upsert_passport
+from vigil.ticket import project_id
+from vigil.wallet import DEFAULT_MAX_CHILDREN, over_cap, record as record_child
 from vigil.pending import write_surprise
 from vigil.rewind import should_cow, snapshot_file
 from vigil.risk import ALLOW, ASK, CRITICAL_CLASSES, DENY, Risk, classify, is_secret_path, path_inside
@@ -83,8 +86,10 @@ def apply_mode(mode: str, classified: str, hold: bool = False) -> str:
 def _apply_human(action: str, policy: Policy, risk: Risk, session_id: str) -> tuple[str, str]:
     if action == "allow":
         return ALLOW, "Allowed once."
-    if action in {"session", "always"} and risk.class_id in CRITICAL_CLASSES:
-        return ALLOW, "Allowed once. Deadly classes cannot be ticketed."
+    if action in {"session", "always"} and (
+        risk.class_id in CRITICAL_CLASSES or risk.class_id == "subagent-cap"
+    ):
+        return ALLOW, "Allowed once. This class cannot be ticketed."
     if action == "session":
         policy.remember_session(session_id, risk.rule_key)
         return ALLOW, "Allowed for this session."
@@ -163,11 +168,22 @@ def gate_call(
         return GateResult(ALLOW, "Vigil is off.", None, False, resp)
 
     risk = classify(call)
-    env_name = envelope_for(
-        home, agent=call.agent_hint, session_id=call.session_id, cwd=call.workspace or call.cwd
-    )
+    cwd = call.workspace or call.cwd
+    env_name = envelope_for(home, agent=call.agent_hint, session_id=call.session_id, cwd=cwd)
+    env_name = envelope_for_cwd(home, cwd, env_name)
     risk = apply_envelope(env_name, risk, call)
     passport_id = make_id(call.agent_hint, call.session_id, None)
+    if call.tool == "subagent" and over_cap(home, passport_id, pol.max_subagents or DEFAULT_MAX_CHILDREN):
+        from dataclasses import replace
+
+        risk = replace(
+            risk,
+            decision=DENY,
+            hold=True,
+            class_id="subagent-cap",
+            title="Too many helper agents today",
+            reason=f"This agent already spawned {pol.max_subagents} helpers today.",
+        )
     if call.path and call.tool == "write":
         held = claim_conflict(home, call.path, passport_id)
         if held:
@@ -181,7 +197,22 @@ def gate_call(
                 title="Another agent holds this file",
                 reason=f"{held.get('agent') or 'another agent'} already writes {call.path}.",
             )
+        elif is_exclusive(home, cwd):
+            owner = _project_owner(home, cwd, passport_id)
+            if owner:
+                from dataclasses import replace
+
+                risk = replace(
+                    risk,
+                    decision=ASK,
+                    hold=True,
+                    class_id="project-owner",
+                    title="Another agent owns this project",
+                    reason=f"{owner.get('agent') or 'another agent'} is already the writer here.",
+                )
     override = pol.key_override(risk, call.session_id)
+    if risk.class_id == "subagent-cap":
+        override = None
     effective = "seatbelt" if pol.is_trusted(call.cwd, now) and mode == "ask" else mode
     decision = override or apply_mode(effective, risk.decision, hold=risk.hold)
     reason = risk.reason
@@ -217,8 +248,10 @@ def gate_call(
             home,
             agent=call.agent_hint,
             session_id=call.session_id,
-            cwd=call.workspace or call.cwd,
+            cwd=cwd,
         )
+        if call.tool == "subagent":
+            record_child(home, passport_id)
         if call.tool == "write" and call.path:
             take_claim(home, call.path, passport_id, agent=call.agent_hint)
             if should_cow(call.path, home):
@@ -259,6 +292,20 @@ def gate_call(
 
     resp = hook_response(decision, reason)
     return GateResult(decision, reason, risk, asked, resp)
+
+
+def _project_owner(home: Path, cwd: str, passport_id: str) -> dict[str, Any] | None:
+    want = project_id(cwd)
+    root = cwd.rstrip("/")
+    for row in list_passports(home):
+        if str(row.get("id") or "") == passport_id:
+            continue
+        if str(row.get("status") or "") == "dead":
+            continue
+        same = str(row.get("project") or "") == want or str(row.get("projectRoot") or "").rstrip("/") == root
+        if same:
+            return row
+    return None
 
 
 def _surprise(call) -> bool:

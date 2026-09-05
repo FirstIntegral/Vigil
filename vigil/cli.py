@@ -220,7 +220,13 @@ def cmd_freeze(args: argparse.Namespace) -> int:
     policy = load_policy(home)
     policy.freeze()
     save_policy(home, policy)
-    sys.stdout.write(json.dumps({"ok": True, "mode": policy.effective_mode(), "frozen": True}) + "\n")
+    from vigil.pause import pause_all
+
+    paused = pause_all(home)
+    sys.stdout.write(
+        json.dumps({"ok": True, "mode": policy.effective_mode(), "frozen": True, "paused": paused})
+        + "\n"
+    )
     return 0
 
 
@@ -232,7 +238,15 @@ def cmd_unfreeze(args: argparse.Namespace) -> int:
     policy = load_policy(home)
     policy.unfreeze()
     save_policy(home, policy)
-    sys.stdout.write(json.dumps({"ok": True, "mode": policy.effective_mode(), "frozen": False}) + "\n")
+    from vigil.pause import resume_all
+
+    resumed = resume_all(home)
+    sys.stdout.write(
+        json.dumps(
+            {"ok": True, "mode": policy.effective_mode(), "frozen": False, "resumed": resumed}
+        )
+        + "\n"
+    )
     return 0
 
 
@@ -288,7 +302,10 @@ def cmd_trust(args: argparse.Namespace) -> int:
         snap = collect(home=home)
         sessions = snap.get("sessions") or []
         root = str(sessions[0]["cwd"]) if sessions and sessions[0].get("cwd") else str(home)
-    policy.trust_for(args.minutes, root)
+    if getattr(args, "until_lock", False):
+        policy.trust_until_lid(root)
+    else:
+        policy.trust_for(args.minutes, root)
     save_policy(home, policy)
     sys.stdout.write(
         json.dumps(
@@ -296,6 +313,7 @@ def cmd_trust(args: argparse.Namespace) -> int:
                 "ok": True,
                 "trustRoot": policy.trust_root,
                 "trustUntil": policy.trust_until,
+                "trustUntilLock": policy.trust_until_lock,
             }
         )
         + "\n"
@@ -383,7 +401,11 @@ def cmd_rewind(args: argparse.Namespace) -> int:
     if refused is not None:
         return refused
     home = _home(args)
-    result = rewind(home, project_root=args.root or "")
+    result = rewind(
+        home,
+        project_root=args.root or "",
+        session_id=getattr(args, "session", "") or "",
+    )
     sys.stdout.write(json.dumps(result) + "\n")
     return 0
 
@@ -422,22 +444,135 @@ def cmd_spawn(args: argparse.Namespace) -> int:
     env = normalize_envelope(args.envelope)
     from vigil.passport import upsert
 
-    paper = upsert(home, agent=agent, cwd=project, envelope=env)
+    paper = upsert(
+        home,
+        agent=agent,
+        cwd=project,
+        envelope=env,
+        parent=getattr(args, "parent", "") or "",
+        inherit_tickets=False if getattr(args, "parent", "") else None,
+    )
+    command = [agent]
     plan = {
         "ok": True,
         "passport": paper,
-        "command": [agent],
+        "command": command,
         "cwd": project,
         "envelope": env,
         "exec": bool(args.exec),
-        "note": "Landlock is not available from an Omarchy plugin. Envelope is a sticker the gate honours.",
+        "cage": bool(getattr(args, "cage", False)),
+        "note": "Filesystem is not jailed. --cage drops the network namespace only.",
     }
+    if getattr(args, "cage", False):
+        from vigil.cage import CageRefused, plan as cage_plan
+
+        try:
+            spec = cage_plan(command, cwd=project, net=False)
+        except CageRefused as exc:
+            sys.stderr.write(f"vigil: {exc}\n")
+            sys.stdout.write(json.dumps({"ok": False, "error": str(exc)}) + "\n")
+            return 2
+        plan["command"] = spec["argv"]
+        plan["note"] = spec["note"]
+        if not args.exec:
+            sys.stdout.write(json.dumps(plan) + "\n")
+            return 0
+        from vigil.cage import exec_caged
+
+        exec_caged(command, cwd=project, net=False)
+        return 1  # pragma: no cover
     if not args.exec:
         sys.stdout.write(json.dumps(plan) + "\n")
         return 0
     os.chdir(project)
     os.execvp(agent, [agent])
     return 1  # pragma: no cover
+
+
+def cmd_tickets(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
+    home = _home(args)
+    policy = load_policy(home)
+    if args.action == "revoke":
+        if not args.key:
+            sys.stderr.write("vigil: ticket key required\n")
+            return 2
+        hit = policy.revoke(args.key)
+        save_policy(home, policy)
+        sys.stdout.write(json.dumps({"ok": True, "revoked": hit, "key": args.key}) + "\n")
+        return 0
+    sys.stdout.write(
+        json.dumps({"ok": True, "allow": sorted(policy.allow_keys), "deny": sorted(policy.deny_keys)})
+        + "\n"
+    )
+    return 0
+
+
+def cmd_folder(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
+    from vigil.folders import drop, list_folders, upsert
+
+    home = _home(args)
+    if args.drop:
+        if not args.path:
+            sys.stderr.write("vigil: folder path required\n")
+            return 2
+        sys.stdout.write(json.dumps({"ok": True, "dropped": drop(home, args.path)}) + "\n")
+        return 0
+    if not args.path:
+        sys.stdout.write(json.dumps({"ok": True, "folders": list_folders(home)}) + "\n")
+        return 0
+    env = args.envelope or "project"
+    row = upsert(
+        home,
+        args.path,
+        env,
+        exclusive=True if args.exclusive else (False if args.shared else None),
+        cage=True if args.cage else None,
+    )
+    sys.stdout.write(json.dumps({"ok": True, "folder": row}) + "\n")
+    return 0
+
+
+def cmd_log(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
+    from vigil.audit import tail as audit_tail
+
+    rows = audit_tail(_home(args), limit=max(1, min(500, int(args.limit))))
+    sys.stdout.write(json.dumps({"ok": True, "rows": rows}) + "\n")
+    return 0
+
+
+def cmd_brief(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
+    from vigil.dossier import summarize
+
+    sys.stdout.write(json.dumps({"ok": True, "brief": summarize(_home(args))}) + "\n")
+    return 0
+
+
+def cmd_machine(args: argparse.Namespace) -> int:
+    from vigil.machine import read, write
+
+    home = _home(args)
+    if args.write:
+        refused = _refuse_agent()
+        if refused is not None:
+            return refused
+        path = write(home)
+        sys.stdout.write(json.dumps({"ok": True, "path": str(path)}) + "\n")
+        return 0
+    text = read(home)
+    sys.stdout.write(text if text.endswith("\n") else text + "\n")
+    return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -514,6 +649,7 @@ def build_parser() -> argparse.ArgumentParser:
     trust.add_argument("minutes", nargs="?", type=int, default=60)
     trust.add_argument("--root", default=None)
     trust.add_argument("--clear", action="store_true")
+    trust.add_argument("--until-lock", action="store_true", help="Trust until the screen locks.")
     trust.set_defaults(func=cmd_trust)
 
     panic = sub.add_parser("panic", help="Freeze + kill every agent.")
@@ -536,6 +672,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     rew = sub.add_parser("rewind", help="Restore git-tracked files this session touched.")
     rew.add_argument("--root", default=None)
+    rew.add_argument("--session", default="", help="Only files this session id touched.")
     rew.set_defaults(func=cmd_rewind)
 
     lid = sub.add_parser("lid", help="on | off | cycle | sync")
@@ -546,8 +683,35 @@ def build_parser() -> argparse.ArgumentParser:
     spawn.add_argument("agent")
     spawn.add_argument("--project", default=None)
     spawn.add_argument("--envelope", default="project")
+    spawn.add_argument("--parent", default="", help="Parent passport id for a helper.")
     spawn.add_argument("--exec", action="store_true")
+    spawn.add_argument("--cage", action="store_true", help="Drop network (bwrap unshare-net). Fail closed.")
     spawn.set_defaults(func=cmd_spawn)
+
+    tickets = sub.add_parser("tickets", help="List or revoke Always / deny-always tickets.")
+    tickets.add_argument("action", nargs="?", default="list", choices=["list", "revoke"])
+    tickets.add_argument("key", nargs="?", default="")
+    tickets.set_defaults(func=cmd_tickets)
+
+    folder = sub.add_parser("folder", help="Per-folder lease. Human only.")
+    folder.add_argument("path", nargs="?", default=None)
+    folder.add_argument("envelope", nargs="?", default=None, choices=list(ENVELOPES))
+    folder.add_argument("--drop", action="store_true")
+    folder.add_argument("--exclusive", action="store_true", help="One writer for this folder.")
+    folder.add_argument("--shared", action="store_true")
+    folder.add_argument("--cage", action="store_true")
+    folder.set_defaults(func=cmd_folder)
+
+    log_p = sub.add_parser("log", help="Read the local black box (already redacted).")
+    log_p.add_argument("--limit", type=int, default=50)
+    log_p.set_defaults(func=cmd_log)
+
+    brief = sub.add_parser("brief", help="Today's counts. Not a blocking card.")
+    brief.set_defaults(func=cmd_brief)
+
+    machine = sub.add_parser("machine", help="Print the machine card agents may read.")
+    machine.add_argument("--write", action="store_true")
+    machine.set_defaults(func=cmd_machine)
 
     return parser
 

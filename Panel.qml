@@ -114,6 +114,18 @@ Panel {
     else if (t === "h" || t === "H") {
       if (root.service) root.service.trustHour()
     }
+    else if (t === "u" || t === "U") {
+      if (root.service && typeof root.service.trustUntilLockScreen === "function")
+        root.service.trustUntilLockScreen()
+    }
+    else if (t === "v" || t === "V") {
+      var allow = root.service && root.service.tickets ? root.service.tickets.allow : []
+      if (allow && allow.length && root.service) root.service.revokeTicket(allow[0])
+    }
+    else if (t === "g" || t === "G") {
+      var row = root.selectedSession()
+      if (row && row.cwd && root.service) root.service.setFolder(row.cwd, "project")
+    }
     else if (t === "e" || t === "E") {
       var row = root.selectedSession()
       if (row && root.service) root.service.cycleEnvelope(row.passportId || row.id)
@@ -296,12 +308,28 @@ Panel {
           visible: root.dossier && root.dossier.counts
           text: {
             var c = root.dossier.counts || {}
-            return "today: " + (c.tools || 0) + " tool calls, " + (c.deny || 0) + " denied, " + (c.allow || 0) + " allowed"
+            var files = (root.dossier.files || []).length
+            return "today: " + (c.tools || 0) + " tool calls, " + (c.deny || 0) + " denied, " + (c.allow || 0) + " allowed, " + files + " files"
           }
           color: root.contentForeground
           opacity: 0.45
           font.family: root.contentFontFamily
           font.pixelSize: Style.font.caption
+          width: parent.width
+        }
+
+        Text {
+          visible: root.service && root.service.tickets && (root.service.tickets.allow || []).length > 0
+          text: {
+            var n = (root.service.tickets.allow || []).length
+            var first = (root.service.tickets.allow || [])[0] || ""
+            return n + (n === 1 ? " ticket" : " tickets") + " · v revokes " + first
+          }
+          color: root.contentForeground
+          opacity: 0.45
+          font.family: root.contentFontFamily
+          font.pixelSize: Style.font.caption
+          elide: Text.ElideMiddle
           width: parent.width
         }
 
@@ -513,6 +541,27 @@ Panel {
           }
           Text {
             text: "l lid"
+            color: root.contentForeground
+            opacity: 0.4
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+          }
+          Text {
+            text: "v revoke ticket"
+            color: root.contentForeground
+            opacity: 0.4
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+          }
+          Text {
+            text: "g folder lease"
+            color: root.contentForeground
+            opacity: 0.4
+            font.family: root.contentFontFamily
+            font.pixelSize: Style.font.caption
+          }
+          Text {
+            text: "u trust till lock"
             color: root.contentForeground
             opacity: 0.4
             font.family: root.contentFontFamily

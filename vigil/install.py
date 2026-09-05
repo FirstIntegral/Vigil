@@ -8,6 +8,7 @@ from typing import Any
 
 from vigil import HOOK_TIMEOUT_SEC, PLUGIN_ID
 from vigil.house import skill_markdown
+from vigil.machine import write as write_machine
 from vigil.secure import write_private
 
 
@@ -234,6 +235,7 @@ def install(home: Path, helper: str) -> dict[str, str]:
     written["skill"] = str(skill_dest)
     written["plugin"] = PLUGIN_ID
     written["helper"] = helper
+    written["machine"] = str(write_machine(home))
     return written
 
 

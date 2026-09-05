@@ -16,6 +16,7 @@ from vigil.classify import AgentMatch, discover
 from vigil.dossier import summarize
 from vigil.enrich import enrich_all
 from vigil.envelope import DEFAULT_ENVELOPE
+from vigil.folders import list_folders
 from vigil.install import hooks_installed
 from vigil.lid import sync as lid_sync
 from vigil.passport import envelope_for, list_passports, make_id, reap, upsert
@@ -111,6 +112,13 @@ def build_snapshot(
         "hooks": hooks,
         "audit": audit_tail(home, limit=20),
         "dossier": dossier,
+        "brief": dossier,
+        "tickets": {
+            "allow": sorted(policy.allow_keys),
+            "deny": sorted(policy.deny_keys),
+        },
+        "folders": list_folders(home),
+        "trustUntilLock": policy.trust_until_lock,
         "totals": {
             "agents": len(sessions),
             "running": running,

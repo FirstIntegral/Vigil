@@ -23,7 +23,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This machine is Omarchy (hostname `omarchy`). Plugin `xyz.brwsk.vigil` is enabled. Session files are gitignored, so a fresh clone will not have `session_compact.md` — create it from the `create_project` template on first session here. Resume from `session_compact.md` (when present) + this file + `docs/DECISIONS.md`.
 
-Version **0.5.4**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only).
+Version **0.6.0**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Do not `git push` until the user approves.
 
 1. GitHub SSH works on this box (`ssh -T git@github.com`).
 2. Plugin already added: `omarchy plugin list` shows `xyz.brwsk.vigil` enabled.
@@ -56,6 +56,11 @@ Later, not blocking submit: Cursor and remaining harness hooks; Rust `vigil-gate
 - Envelope: `python3 bin/vigil envelope <id> project|hermit|desktop|read|seatbelt|cycle`
 - Rewind: `python3 bin/vigil rewind --root <project>`
 - Lid: `python3 bin/vigil lid on|off|cycle|sync`
+- Tickets: `python3 bin/vigil tickets` / `tickets revoke <key>`
+- Folder lease: `python3 bin/vigil folder <path> project|hermit|… [--exclusive]`
+- Brief / log: `python3 bin/vigil brief` · `python3 bin/vigil log`
+- Machine card: `python3 bin/vigil machine`
+- Spawn cage: `python3 bin/vigil spawn <agent> --cage` (prints plan; `--exec` runs it)
 - On Omarchy: `omarchy plugin enable xyz.brwsk.vigil` then panel `i` to arm
 
 ## Repo

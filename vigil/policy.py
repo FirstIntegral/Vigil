@@ -19,6 +19,14 @@ MODES = ("off", "seatbelt", "ask", "frozen")
 DEFAULT_MODE = "seatbelt"
 
 
+def _max_subagents(value: Any) -> int:
+    try:
+        n = int(value)
+    except (TypeError, ValueError):
+        n = 2
+    return max(0, min(32, n))
+
+
 def _load_json(path: Path, fallback: Any) -> Any:
     try:
         return json.loads(path.read_text(encoding="utf-8"))
@@ -38,6 +46,8 @@ class Policy:
     alert: str = DEFAULT_ALERT
     trust_until: str = ""
     trust_root: str = ""
+    trust_until_lock: bool = False
+    max_subagents: int = 2
     lid: bool = True
     lid_held: bool = False
 
@@ -103,10 +113,26 @@ class Policy:
             "%Y-%m-%dT%H:%M:%SZ"
         )
         self.trust_root = root.rstrip("/")
+        self.trust_until_lock = False
+
+    def trust_until_lid(self, root: str) -> None:
+        self.trust_root = root.rstrip("/")
+        self.trust_until = ""
+        self.trust_until_lock = True
 
     def clear_trust(self) -> None:
         self.trust_until = ""
         self.trust_root = ""
+        self.trust_until_lock = False
+
+    def revoke(self, key: str) -> bool:
+        key = str(key or "")
+        if not key:
+            return False
+        hit = key in self.allow_keys or key in self.deny_keys
+        self.allow_keys.discard(key)
+        self.deny_keys.discard(key)
+        return hit
 
     def set_lid(self, enabled: bool) -> None:
         self.lid = bool(enabled)
@@ -114,7 +140,16 @@ class Policy:
             self.lid_held = False
 
     def is_trusted(self, cwd: str, now: datetime | None = None) -> bool:
-        if not self.trust_until or not self.trust_root:
+        path = (cwd or "").rstrip("/")
+        root = self.trust_root.rstrip("/")
+        if not root:
+            return False
+        under = path == root or path.startswith(root + "/")
+        if not under:
+            return False
+        if self.trust_until_lock:
+            return True
+        if not self.trust_until:
             return False
         try:
             expiry = datetime.strptime(self.trust_until, "%Y-%m-%dT%H:%M:%SZ").replace(
@@ -123,11 +158,7 @@ class Policy:
         except ValueError:
             return False
         stamp = now or datetime.now(timezone.utc)
-        if stamp >= expiry:
-            return False
-        path = (cwd or "").rstrip("/")
-        root = self.trust_root
-        return path == root or path.startswith(root + "/")
+        return stamp < expiry
 
     def key_override(self, risk: Risk, session_id: str) -> str | None:
         if risk.rule_key in self.deny_keys:
@@ -153,6 +184,8 @@ class Policy:
             "alert": self.alert if self.alert in ALERTS else DEFAULT_ALERT,
             "trustUntil": self.trust_until,
             "trustRoot": self.trust_root,
+            "trustUntilLock": self.trust_until_lock,
+            "maxSubagents": max(0, min(32, int(self.max_subagents))),
             "lid": self.lid,
             "lidHeld": self.lid_held,
             "allow": sorted(self.allow_keys),
@@ -189,6 +222,8 @@ def load_policy(home: Path) -> Policy:
         alert=str(raw.get("alert") or DEFAULT_ALERT),
         trust_until=str(raw.get("trustUntil") or ""),
         trust_root=str(raw.get("trustRoot") or ""),
+        trust_until_lock=raw.get("trustUntilLock") is True,
+        max_subagents=_max_subagents(raw.get("maxSubagents", 2)),
         lid=raw.get("lid", True) is not False,
         lid_held=raw.get("lidHeld") is True,
     )

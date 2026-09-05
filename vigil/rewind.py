@@ -146,8 +146,38 @@ def files_from_audit(home: Path, limit: int = 80) -> list[str]:
     return seen
 
 
-def rewind(home: Path, project_root: str = "", paths: list[str] | None = None) -> dict[str, Any]:
-    targets = paths if paths is not None else files_from_audit(home)
+def files_for_session(home: Path, session_id: str, limit: int = 80) -> list[str]:
+    if not session_id:
+        return files_from_audit(home, limit=limit)
+    seen: list[str] = []
+    have: set[str] = set()
+    for row in audit_tail(home, limit=400):
+        if str(row.get("sessionId") or "") != session_id:
+            continue
+        path = row.get("path")
+        if not isinstance(path, str) or not path or path in have:
+            continue
+        if is_secret_path(path):
+            continue
+        have.add(path)
+        seen.append(path)
+        if len(seen) >= limit:
+            break
+    return seen
+
+
+def rewind(
+    home: Path,
+    project_root: str = "",
+    paths: list[str] | None = None,
+    session_id: str = "",
+) -> dict[str, Any]:
+    if paths is not None:
+        targets = paths
+    elif session_id:
+        targets = files_for_session(home, session_id)
+    else:
+        targets = files_from_audit(home)
     restored: list[str] = []
     skipped: list[str] = []
     root = Path(project_root).resolve() if project_root else None

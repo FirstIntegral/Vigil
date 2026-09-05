@@ -27,6 +27,8 @@ AGENTS: tuple[AgentSpec, ...] = (
     AgentSpec("cursor-agent", "Cursor", ("cursor-agent",)),
     AgentSpec("copilot", "Copilot CLI", ("copilot",)),
     AgentSpec("crush", "Crush", ("crush",)),
+    AgentSpec("gemini", "Gemini", ("gemini",)),
+    AgentSpec("omp", "Oh My Pi", ("omp",)),
     AgentSpec("agy", "Antigravity", ("agy",)),
     AgentSpec("hermes", "Hermes", ("hermes",)),
     AgentSpec("ori", "Ori", ("ori",)),

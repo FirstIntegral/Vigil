@@ -70,7 +70,7 @@ Press `m` to cycle. There are four global modes:
 omarchy plugin add https://github.com/FirstIntegral/Vigil.git --enable
 ```
 
-If the GitHub repository is still private, clone over SSH instead:
+Or over SSH:
 
 ```
 omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable

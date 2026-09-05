@@ -23,9 +23,9 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This Ubuntu box never armed hooks. The next session is on a real Omarchy machine. Session files are gitignored, so a fresh clone will not have `session_compact.md`. Resume from this file + `docs/DECISIONS.md`.
 
-Version **0.5.4**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Private remote `git@github.com:FirstIntegral/Vigil.git`.
+Version **0.5.4**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only).
 
-1. GitHub SSH must work on that machine (repo is private).
+1. GitHub SSH must work on that machine for pushing; cloning is public.
 2. Install the plugin:
    `omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable`
    Live copy lands under `~/.config/omarchy/plugins/xyz.brwsk.vigil/`. For code changes you can also clone to `~/projects/vigil`; the plugin tree is what Omarchy loads.
@@ -37,7 +37,7 @@ Version **0.5.4**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **ale
    - **human** terminal: `python3 bin/vigil prove` — polkit card + bar + toast; nothing is deleted; deny it
    - live hook: ask the agent to run `vigil-glass-proof` (command-not-found if the hook is missing). Never ask it to delete `/`
    - lock the screen → agents freeze; unlock does **not** unfreeze; card offers keep frozen / let them run / restore files
-6. Marketplace listing is separate and needs a **public** GitHub repo. The first plugin competition already ended (2026-08-24). Do not make the repo public unless the user says so.
+6. Marketplace listing needs a public GitHub repo — done (2026-09-05).
 
 Do **not** `vigil install` on Ubuntu or any non-Omarchy host. Do not become herdr / `omarchy.agents` / omaharness. Do not return harness `ask`. Overlay IPC must stay `open`/`close` only.
 

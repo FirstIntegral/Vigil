@@ -11,8 +11,8 @@ class CallParseTests(unittest.TestCase):
             {
                 "hookEventName": "pre_tool_use",
                 "sessionId": "abc",
-                "cwd": "/home/brwsk/projects/vigil",
-                "workspaceRoot": "/home/brwsk/projects/vigil",
+                "cwd": "/home/brwsk/Projects/vigil",
+                "workspaceRoot": "/home/brwsk/Projects/vigil",
                 "permissionMode": "always-approve",
                 "toolName": "run_terminal_command",
                 "toolInput": {"command": "rm -rf /"},

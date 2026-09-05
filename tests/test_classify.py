@@ -12,7 +12,7 @@ def proc(
     *,
     cmdline: tuple[str, ...] = (),
     exe: str | None = None,
-    cwd: str | None = "/home/brwsk/projects/vigil",
+    cwd: str | None = "/home/brwsk/Projects/vigil",
     uid: int = 1000,
     state: str = "S",
 ) -> Proc:
@@ -92,7 +92,7 @@ class ClassifyTests(unittest.TestCase):
                 proc(
                     50,
                     "python3",
-                    cmdline=("python3", "/home/brwsk/projects/vigil/bin/vigil", "snapshot"),
+                    cmdline=("python3", "/home/brwsk/Projects/vigil/bin/vigil", "snapshot"),
                     exe="/usr/bin/python3",
                 )
             )

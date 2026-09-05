@@ -17,7 +17,7 @@ from vigil.policy import Policy, save_policy
 from vigil.risk import ALLOW, ASK, DENY, classify
 
 
-def bash(cmd: str, cwd: str = "/home/brwsk/projects/vigil") -> ToolCall:
+def bash(cmd: str, cwd: str = "/home/brwsk/Projects/vigil") -> ToolCall:
     return ToolCall(
         event="pre_tool_use",
         tool="bash",
@@ -33,7 +33,7 @@ def bash(cmd: str, cwd: str = "/home/brwsk/projects/vigil") -> ToolCall:
     )
 
 
-def write(path: str, cwd: str = "/home/brwsk/projects/vigil") -> ToolCall:
+def write(path: str, cwd: str = "/home/brwsk/Projects/vigil") -> ToolCall:
     return ToolCall(
         event="pre_tool_use",
         tool="write",
@@ -53,8 +53,8 @@ def grok_bash(command: str) -> dict:
     return {
         "hookEventName": "pre_tool_use",
         "sessionId": "sess-1",
-        "cwd": "/home/brwsk/projects/vigil",
-        "workspaceRoot": "/home/brwsk/projects/vigil",
+        "cwd": "/home/brwsk/Projects/vigil",
+        "workspaceRoot": "/home/brwsk/Projects/vigil",
         "permissionMode": "always-approve",
         "toolName": "run_terminal_command",
         "toolInput": {"command": command},
@@ -141,8 +141,8 @@ class McpDeadlyTests(unittest.TestCase):
             raw_tool="foo__run",
             command="rm -rf /",
             path=None,
-            cwd="/home/brwsk/projects/vigil",
-            workspace="/home/brwsk/projects/vigil",
+            cwd="/home/brwsk/Projects/vigil",
+            workspace="/home/brwsk/Projects/vigil",
             session_id="s",
             permission_mode="",
             agent_hint="grok",
@@ -157,8 +157,8 @@ class McpDeadlyTests(unittest.TestCase):
             raw_tool="foo__run",
             command=None,
             path=None,
-            cwd="/home/brwsk/projects/vigil",
-            workspace="/home/brwsk/projects/vigil",
+            cwd="/home/brwsk/Projects/vigil",
+            workspace="/home/brwsk/Projects/vigil",
             session_id="s",
             permission_mode="",
             agent_hint="grok",

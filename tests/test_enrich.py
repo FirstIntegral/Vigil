@@ -28,7 +28,7 @@ class EnrichTests(unittest.TestCase):
     def test_claude_project_dir_name(self) -> None:
         self.assertEqual(claude_project_dir_name("/home/brwsk"), "-home-brwsk")
         self.assertEqual(
-            claude_project_dir_name("/home/brwsk/projects/vigil"),
+            claude_project_dir_name("/home/brwsk/Projects/vigil"),
             "-home-brwsk-projects-vigil",
         )
 
@@ -49,7 +49,7 @@ class EnrichTests(unittest.TestCase):
                         {
                             "session_id": "abc-123",
                             "pid": 10931,
-                            "cwd": "/home/brwsk/projects/vigil",
+                            "cwd": "/home/brwsk/Projects/vigil",
                             "opened_at": "2026-09-01T20:12:33Z",
                         }
                     ]

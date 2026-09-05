@@ -28,7 +28,7 @@ Version **0.5.4**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **ale
 1. GitHub SSH must work on that machine for pushing; cloning is public.
 2. Install the plugin:
    `omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable`
-   Live copy lands under `~/.config/omarchy/plugins/xyz.brwsk.vigil/`. For code changes you can also clone to `~/projects/vigil`; the plugin tree is what Omarchy loads.
+   Live copy lands under `~/.config/omarchy/plugins/xyz.brwsk.vigil/`. For code changes you can also clone to `~/Projects/vigil`; the plugin tree is what Omarchy loads.
 3. Arm hooks once: open the eye in the bar and press `i`, or
    `python3 ~/.config/omarchy/plugins/xyz.brwsk.vigil/bin/vigil install`
 4. Restart the agent session so the hook loads.

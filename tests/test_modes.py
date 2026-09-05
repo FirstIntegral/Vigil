@@ -13,8 +13,8 @@ def grok_bash(command: str) -> dict:
     return {
         "hookEventName": "pre_tool_use",
         "sessionId": "sess-1",
-        "cwd": "/home/brwsk/projects/vigil",
-        "workspaceRoot": "/home/brwsk/projects/vigil",
+        "cwd": "/home/brwsk/Projects/vigil",
+        "workspaceRoot": "/home/brwsk/Projects/vigil",
         "permissionMode": "always-approve",
         "toolName": "run_terminal_command",
         "toolInput": {"command": command},

@@ -97,7 +97,7 @@
 
 ## 2026-09-02 GitHub repo display name is Vigil
 - User renamed `FirstIntegral/vigil` → `FirstIntegral/Vigil` on GitHub (still private). Clone URLs are case-insensitive; GitHub's canonical SSH is now `git@github.com:FirstIntegral/Vigil.git`.
-- **Decision:** `origin` and tracked clone lines (`AGENTS.md` `## Repo`, README install) use that casing. Local directory stays `~/projects/vigil`. Plugin id stays `xyz.brwsk.vigil`.
+- **Decision:** `origin` and tracked clone lines (`AGENTS.md` `## Repo`, README install) use that casing. Local directory stays `~/Projects/vigil`. Plugin id stays `xyz.brwsk.vigil`.
 - **Rejected:** renaming the local folder or the plugin id; treating the GitHub title as a new product.
 
 ## 2026-09-02 Do not skip Vigil when the harness is YOLO

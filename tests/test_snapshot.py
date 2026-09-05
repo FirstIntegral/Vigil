@@ -34,7 +34,7 @@ class SnapshotTests(unittest.TestCase):
                 comm="grok",
                 cmdline=("grok",),
                 exe="/usr/bin/grok",
-                cwd="/home/brwsk/projects/vigil",
+                cwd="/home/brwsk/Projects/vigil",
                 rss_bytes=50_000_000,
                 state="S",
                 start_time_ticks=1,

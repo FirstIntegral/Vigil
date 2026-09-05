@@ -11,7 +11,7 @@ from vigil.passport import upsert
 from vigil.risk import ASK, ALLOW, classify
 
 
-def bash(cmd: str, cwd: str = "/home/brwsk/Projects/vigil") -> ToolCall:
+def bash(cmd: str, cwd: str = "/home/brwsk/Projects/Vigil") -> ToolCall:
     return ToolCall(
         event="pre_tool_use",
         tool="bash",
@@ -35,14 +35,14 @@ class EnvelopeTests(unittest.TestCase):
                 home,
                 agent="grok",
                 session_id="sess-1",
-                cwd="/home/brwsk/Projects/vigil",
+                cwd="/home/brwsk/Projects/Vigil",
                 envelope="project",
             )
             payload = {
                 "hookEventName": "pre_tool_use",
                 "sessionId": "sess-1",
-                "cwd": "/home/brwsk/Projects/vigil",
-                "workspaceRoot": "/home/brwsk/Projects/vigil",
+                "cwd": "/home/brwsk/Projects/Vigil",
+                "workspaceRoot": "/home/brwsk/Projects/Vigil",
                 "permissionMode": "always-approve",
                 "toolName": "search_replace",
                 "toolInput": {"file_path": "/etc/hosts"},
@@ -57,8 +57,8 @@ class EnvelopeTests(unittest.TestCase):
                 {
                     "hookEventName": "pre_tool_use",
                     "sessionId": "s",
-                    "cwd": "/home/brwsk/Projects/vigil",
-                    "workspaceRoot": "/home/brwsk/Projects/vigil",
+                    "cwd": "/home/brwsk/Projects/Vigil",
+                    "workspaceRoot": "/home/brwsk/Projects/Vigil",
                     "toolName": "run_terminal_command",
                     "toolInput": {"command": "pytest"},
                 },
@@ -80,9 +80,9 @@ class EnvelopeTests(unittest.TestCase):
             tool="write",
             raw_tool="search_replace",
             command=None,
-            path="/home/brwsk/Projects/vigil/README.md",
-            cwd="/home/brwsk/Projects/vigil",
-            workspace="/home/brwsk/Projects/vigil",
+            path="/home/brwsk/Projects/Vigil/README.md",
+            cwd="/home/brwsk/Projects/Vigil",
+            workspace="/home/brwsk/Projects/Vigil",
             session_id="s",
             permission_mode="",
             agent_hint="grok",

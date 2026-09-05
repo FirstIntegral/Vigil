@@ -18,7 +18,7 @@ from vigil.call import ToolCall
 from vigil.wallet import count_today, over_cap, record
 
 
-def grok_call(command: str, cwd: str = "/home/brwsk/Projects/vigil", session: str = "s1") -> dict:
+def grok_call(command: str, cwd: str = "/home/brwsk/Projects/Vigil", session: str = "s1") -> dict:
     return {
         "hookEventName": "pre_tool_use",
         "sessionId": session,
@@ -46,8 +46,8 @@ def subagent_call() -> dict:
     return {
         "hookEventName": "pre_tool_use",
         "sessionId": "s1",
-        "cwd": "/home/brwsk/Projects/vigil",
-        "workspaceRoot": "/home/brwsk/Projects/vigil",
+        "cwd": "/home/brwsk/Projects/Vigil",
+        "workspaceRoot": "/home/brwsk/Projects/Vigil",
         "permissionMode": "always-approve",
         "toolName": "spawn_subagent",
         "toolInput": {"prompt": "help"},
@@ -98,8 +98,8 @@ class SubagentHoldTests(unittest.TestCase):
             raw_tool="spawn_subagent",
             command=None,
             path=None,
-            cwd="/home/brwsk/Projects/vigil",
-            workspace="/home/brwsk/Projects/vigil",
+            cwd="/home/brwsk/Projects/Vigil",
+            workspace="/home/brwsk/Projects/Vigil",
             session_id="s",
             permission_mode="always-approve",
             agent_hint="grok",

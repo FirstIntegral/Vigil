@@ -12,7 +12,7 @@ from vigil.risk import ASK, DENY, classify
 from vigil.ticket import mcp_server, project_id, ticket_key
 
 
-def bash(cmd: str, cwd: str = "/home/brwsk/Projects/vigil") -> ToolCall:
+def bash(cmd: str, cwd: str = "/home/brwsk/Projects/Vigil") -> ToolCall:
     return ToolCall(
         event="pre_tool_use",
         tool="bash",
@@ -32,8 +32,8 @@ def grok_bash(command: str) -> dict:
     return {
         "hookEventName": "pre_tool_use",
         "sessionId": "sess-1",
-        "cwd": "/home/brwsk/Projects/vigil",
-        "workspaceRoot": "/home/brwsk/Projects/vigil",
+        "cwd": "/home/brwsk/Projects/Vigil",
+        "workspaceRoot": "/home/brwsk/Projects/Vigil",
         "permissionMode": "always-approve",
         "toolName": "run_terminal_command",
         "toolInput": {"command": command},
@@ -55,8 +55,8 @@ class TicketKeyTests(unittest.TestCase):
             raw_tool="github__create_issue",
             command=None,
             path=None,
-            cwd="/home/brwsk/Projects/vigil",
-            workspace="/home/brwsk/Projects/vigil",
+            cwd="/home/brwsk/Projects/Vigil",
+            workspace="/home/brwsk/Projects/Vigil",
             session_id="s",
             permission_mode="",
             agent_hint="grok",

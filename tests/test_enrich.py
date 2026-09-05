@@ -28,8 +28,8 @@ class EnrichTests(unittest.TestCase):
     def test_claude_project_dir_name(self) -> None:
         self.assertEqual(claude_project_dir_name("/home/brwsk"), "-home-brwsk")
         self.assertEqual(
-            claude_project_dir_name("/home/brwsk/Projects/vigil"),
-            "-home-brwsk-Projects-vigil",
+            claude_project_dir_name("/home/brwsk/Projects/Vigil"),
+            "-home-brwsk-Projects-Vigil",
         )
 
     def test_grok_model_from_config(self) -> None:
@@ -49,7 +49,7 @@ class EnrichTests(unittest.TestCase):
                         {
                             "session_id": "abc-123",
                             "pid": 10931,
-                            "cwd": "/home/brwsk/Projects/vigil",
+                            "cwd": "/home/brwsk/Projects/Vigil",
                             "opened_at": "2026-09-01T20:12:33Z",
                         }
                     ]
@@ -63,7 +63,7 @@ class EnrichTests(unittest.TestCase):
             self.assertEqual(out.session_id, "abc-123")
             self.assertEqual(out.opened_at, "2026-09-01T20:12:33Z")
             self.assertEqual(out.model, "grok-4.6")
-            self.assertEqual(out.project, "vigil")
+            self.assertEqual(out.project, "Vigil")
 
     def test_enrich_claude_from_jsonl(self) -> None:
         proc = Proc(

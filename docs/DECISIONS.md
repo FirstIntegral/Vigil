@@ -146,3 +146,10 @@
 - User screenshot: the `m` in `m cycles mode` (and `move`, `/home`) was a filled box. ASCII `m` was in the QML. JetBrainsMono Nerd Font at caption size, through Qt's default distance-field renderer, fills the three stems. Bold caption made it worse. Omarchy's own `WidgetButton` / `OpticalGlyph` already set `Text.NativeRendering`.
 - **Decision:** `Text.NativeRendering` on panel and overlay copy. Shortcut legends are bold `bodySmall` chips (key + label), including the hero hint so `m cycles mode` uses the same `m` as the key row. Body/prose `font.family` is `sans-serif`. The eye and lock glyphs keep the bar/Nerd family. Live plugin at `~/.config/omarchy/plugins/xyz.brwsk.vigil/` was copied and the shell restarted; glass check showed three stems on `m`.
 - **Rejected:** leaving copy on the bar Nerd font; drawing a fake keycap; renaming the `m` shortcut.
+
+## 2026-09-05 Dev clone directory matches GitHub
+- User: local checkout should match GitHub `FirstIntegral/Vigil`, not stay `~/Projects/vigil`.
+- **Decision:** rename the dev clone to `~/Projects/Vigil`. Test fixtures and `AGENTS.md` clone path follow. `origin` was already `git@github.com:FirstIntegral/Vigil.git`.
+- Identifiers stay lowercase: plugin id `xyz.brwsk.vigil`, CLI `bin/vigil`, Python package `vigil/`, XDG `~/.config/vigil` and `~/.local/state/vigil`, hook filenames. Omarchy live copy stays `~/.config/omarchy/plugins/xyz.brwsk.vigil/` (plugin id, not the GitHub title).
+- Supersedes the 2026-09-02 / 2026-09-05 reject of renaming the local folder. Those ADRs stay as history.
+- **Rejected:** renaming the plugin id, CLI, Python package, or XDG paths to `Vigil`.

@@ -6,7 +6,7 @@ from vigil.call import ToolCall
 from vigil.risk import ALLOW, ASK, DENY, classify, is_secret_path
 
 
-def bash(cmd: str, cwd: str = "/home/brwsk/Projects/vigil") -> ToolCall:
+def bash(cmd: str, cwd: str = "/home/brwsk/Projects/Vigil") -> ToolCall:
     return ToolCall(
         event="pre_tool_use",
         tool="bash",
@@ -22,7 +22,7 @@ def bash(cmd: str, cwd: str = "/home/brwsk/Projects/vigil") -> ToolCall:
     )
 
 
-def write(path: str, cwd: str = "/home/brwsk/Projects/vigil") -> ToolCall:
+def write(path: str, cwd: str = "/home/brwsk/Projects/Vigil") -> ToolCall:
     return ToolCall(
         event="pre_tool_use",
         tool="write",
@@ -43,7 +43,7 @@ class SecretPathTests(unittest.TestCase):
         self.assertTrue(is_secret_path("/home/brwsk/.env"))
         self.assertTrue(is_secret_path("/home/brwsk/.ssh/id_ed25519"))
         self.assertTrue(is_secret_path("/tmp/foo.pem"))
-        self.assertFalse(is_secret_path("/home/brwsk/Projects/vigil/README.md"))
+        self.assertFalse(is_secret_path("/home/brwsk/Projects/Vigil/README.md"))
 
 
 class DenyTests(unittest.TestCase):
@@ -125,8 +125,8 @@ class AskTests(unittest.TestCase):
             raw_tool="read_file",
             command=None,
             path="/home/brwsk/.ssh/id_ed25519",
-            cwd="/home/brwsk/Projects/vigil",
-            workspace="/home/brwsk/Projects/vigil",
+            cwd="/home/brwsk/Projects/Vigil",
+            workspace="/home/brwsk/Projects/Vigil",
             session_id="s",
             permission_mode="",
             agent_hint="grok",
@@ -163,8 +163,8 @@ class AskTests(unittest.TestCase):
             raw_tool="web_search",
             command=None,
             path=None,
-            cwd="/home/brwsk/Projects/vigil",
-            workspace="/home/brwsk/Projects/vigil",
+            cwd="/home/brwsk/Projects/Vigil",
+            workspace="/home/brwsk/Projects/Vigil",
             session_id="s",
             permission_mode="",
             agent_hint="grok",
@@ -179,8 +179,8 @@ class AskTests(unittest.TestCase):
             raw_tool="spawn_subagent",
             command=None,
             path=None,
-            cwd="/home/brwsk/Projects/vigil",
-            workspace="/home/brwsk/Projects/vigil",
+            cwd="/home/brwsk/Projects/Vigil",
+            workspace="/home/brwsk/Projects/Vigil",
             session_id="s",
             permission_mode="",
             agent_hint="grok",
@@ -206,7 +206,7 @@ class AllowTests(unittest.TestCase):
 
     def test_write_inside(self) -> None:
         self.assertEqual(
-            classify(write("/home/brwsk/Projects/vigil/README.md")).decision, ALLOW
+            classify(write("/home/brwsk/Projects/Vigil/README.md")).decision, ALLOW
         )
 
     def test_read(self) -> None:
@@ -215,9 +215,9 @@ class AllowTests(unittest.TestCase):
             tool="read",
             raw_tool="read_file",
             command=None,
-            path="/home/brwsk/Projects/vigil/README.md",
-            cwd="/home/brwsk/Projects/vigil",
-            workspace="/home/brwsk/Projects/vigil",
+            path="/home/brwsk/Projects/Vigil/README.md",
+            cwd="/home/brwsk/Projects/Vigil",
+            workspace="/home/brwsk/Projects/Vigil",
             session_id="s",
             permission_mode="",
             agent_hint="grok",

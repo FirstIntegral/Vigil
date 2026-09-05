@@ -29,7 +29,7 @@ Version **0.6.0**. Plugin id `xyz.brwsk.vigil`. Default **mode=seatbelt**, **ale
 1. GitHub SSH works on this box (`ssh -T git@github.com`).
 2. Plugin already added: `omarchy plugin list` shows `xyz.brwsk.vigil` enabled.
    Live copy: `~/.config/omarchy/plugins/xyz.brwsk.vigil/` (what Omarchy loads).
-   Dev clone: `~/Projects/vigil`. Keep the plugin tree's `origin` as `git@github.com:FirstIntegral/Vigil.git` (capital V).
+   Dev clone: `~/Projects/Vigil`. Keep the plugin tree's `origin` as `git@github.com:FirstIntegral/Vigil.git` (capital V).
 3. Hooks auto-arm when the plugin service sees them missing (`autoArm` default on). Uninstall sets `autoArm=false`; press `i` to arm again. Agents still cannot run `vigil install`.
 4. Restart the agent session so the hook loads.
 5. Prove the loop on glass:

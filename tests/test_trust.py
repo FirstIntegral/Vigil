@@ -11,7 +11,7 @@ from vigil.policy import Policy, save_policy
 from vigil.risk import ALLOW
 
 
-def grok_bash(command: str, cwd: str = "/home/brwsk/Projects/vigil") -> dict:
+def grok_bash(command: str, cwd: str = "/home/brwsk/Projects/Vigil") -> dict:
     return {
         "hookEventName": "pre_tool_use",
         "sessionId": "sess-1",
@@ -26,19 +26,19 @@ def grok_bash(command: str, cwd: str = "/home/brwsk/Projects/vigil") -> dict:
 class TrustTests(unittest.TestCase):
     def test_is_trusted_window(self) -> None:
         p = Policy()
-        p.trust_for(60, "/home/brwsk/Projects/vigil")
+        p.trust_for(60, "/home/brwsk/Projects/Vigil")
         now = datetime.now(timezone.utc)
-        self.assertTrue(p.is_trusted("/home/brwsk/Projects/vigil", now))
-        self.assertTrue(p.is_trusted("/home/brwsk/Projects/vigil/src", now))
+        self.assertTrue(p.is_trusted("/home/brwsk/Projects/Vigil", now))
+        self.assertTrue(p.is_trusted("/home/brwsk/Projects/Vigil/src", now))
         self.assertFalse(p.is_trusted("/etc", now))
         expired = now + timedelta(hours=2)
-        self.assertFalse(p.is_trusted("/home/brwsk/Projects/vigil", expired))
+        self.assertFalse(p.is_trusted("/home/brwsk/Projects/Vigil", expired))
 
     def test_trust_downgrades_ask_to_seatbelt(self) -> None:
         with TemporaryDirectory() as tmp:
             home = Path(tmp)
             policy = Policy(mode="ask")
-            policy.trust_for(60, "/home/brwsk/Projects/vigil")
+            policy.trust_for(60, "/home/brwsk/Projects/Vigil")
             save_policy(home, policy)
             result = gate_payload(
                 grok_bash("git push origin HEAD"),

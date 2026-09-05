@@ -34,7 +34,7 @@ class SnapshotTests(unittest.TestCase):
                 comm="grok",
                 cmdline=("grok",),
                 exe="/usr/bin/grok",
-                cwd="/home/brwsk/Projects/vigil",
+                cwd="/home/brwsk/Projects/Vigil",
                 rss_bytes=50_000_000,
                 state="S",
                 start_time_ticks=1,
@@ -64,7 +64,7 @@ class SnapshotTests(unittest.TestCase):
         self.assertEqual(ids, ["claude:21351", "grok:10931"])
         self.assertEqual(snap["totals"]["running"], 2)
         grok = next(s for s in snap["sessions"] if s["agent"] == "grok")
-        self.assertEqual(grok["project"], "vigil")
+        self.assertEqual(grok["project"], "Vigil")
         self.assertTrue(grok["killable"])
 
     def test_dumps_is_one_json_object(self) -> None:

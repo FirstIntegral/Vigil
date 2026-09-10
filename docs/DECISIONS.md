@@ -164,3 +164,8 @@
 - User: answering the polkit card felt short (it was 90s, hook 120s). Want a 5 minute window.
 - **Decision:** `ASK_WAIT_SEC = 300`. `HOOK_TIMEOUT_SEC = 330` (same 30s buffer as 90/120) so Vigil still denies before Grok/OpenCode fail-open. Policy default follows. Stored `timeoutSec: 90` (old default, no UI to pick it) migrates to 300 on load. Clamp max is 300. OpenCode plugin timeout is `HOOK_TIMEOUT_SEC * 1000` written at install. Stale hook files (timeout < 330) count as not installed so auto-arm rewrites them. Version **0.6.2**.
 - **Rejected:** 90s wait with a 330s hook (card still dies at 90). Raising wait without raising the hook (Grok would fail-open the call at 120s — worse than a short card). A 10 minute ceiling.
+
+## 2026-09-10 PostToolUse must not emit `allow`
+- Grok TUI: every tool ran `vigil gate` twice. PreToolUse `{"decision":"allow"}` is legal. PostToolUse only honors `"block"`; `"allow"` is logged as `unrecognized decision value 'allow'; only "block" is honored` and ignored. Mode off still spawned the hook, so the thinking pane filled with failed post hooks.
+- **Decision:** `hook_response` emits allow/deny only for `pre_tool_use`. Any other event (PostToolUse, session start) returns `{}`. GateResult.decision stays `allow` internally for the audit log. OpenCode's after-hook treats empty/`allow` as success and only throws on `deny`/`block`. Version **0.6.3**.
+- **Rejected:** mapping post allow to `block` (that would tell the model every call went wrong). Dropping the PostToolUse hook (the black-box log and surprise-write freeze still need it). Treating Vigil mode off as "do not run the hook" (the harness loads `~/.grok/hooks/vigil.json` until uninstall).

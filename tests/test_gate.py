@@ -151,3 +151,35 @@ class GateTests(unittest.TestCase):
             )
             self.assertNotEqual(result.response["decision"], "ask")
             self.assertEqual(result.response["decision"], "deny")
+
+    def test_pre_allow_emits_allow(self) -> None:
+        with TemporaryDirectory() as tmp:
+            result = gate_payload(grok_bash("pytest"), home=Path(tmp))
+            self.assertEqual(result.response["decision"], "allow")
+
+    def test_post_tool_stdout_has_no_decision(self) -> None:
+        """Grok PostToolUse honors only `block`. `allow` is a failed hook."""
+        with TemporaryDirectory() as tmp:
+            result = gate_payload(
+                {
+                    "hookEventName": "post_tool_use",
+                    "sessionId": "sess-1",
+                    "cwd": "/home/brwsk/Projects/Vigil",
+                    "workspaceRoot": "/home/brwsk/Projects/Vigil",
+                    "toolName": "read_file",
+                    "toolInput": {"target_file": "/tmp/x"},
+                },
+                home=Path(tmp),
+            )
+            self.assertEqual(result.decision, ALLOW)
+            self.assertEqual(result.response, {})
+            self.assertNotIn("decision", result.response)
+
+    def test_session_start_stdout_has_no_decision(self) -> None:
+        with TemporaryDirectory() as tmp:
+            result = gate_payload(
+                {"hookEventName": "session_start", "cwd": "/tmp"},
+                home=Path(tmp),
+            )
+            self.assertEqual(result.decision, ALLOW)
+            self.assertEqual(result.response, {})

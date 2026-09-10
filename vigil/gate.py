@@ -48,8 +48,21 @@ def _iso(ts: datetime) -> str:
     return ts.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def hook_response(decision: str, reason: str) -> dict[str, Any]:
-    """Both Grok (top-level decision) and Claude (hookSpecificOutput)."""
+def hook_response(
+    decision: str,
+    reason: str,
+    *,
+    event: str = "pre_tool_use",
+) -> dict[str, Any]:
+    """JSON the harness reads.
+
+    PreToolUse: ``allow`` / ``deny`` only. Never ``ask`` (YOLO auto-approves it).
+    PostToolUse: Grok honors only ``block``. ``allow`` is logged as a hook
+    failure on every call. Post cannot undo a call, so a quiet log is
+    empty JSON.
+    """
+    if event != "pre_tool_use":
+        return {}
     return {
         "decision": decision,
         "reason": reason,
@@ -145,11 +158,11 @@ def gate_call(
                 urgency="critical",
                 alert=pol.alert,
             )
-        resp = hook_response(ALLOW, "logged")
+        resp = hook_response(ALLOW, "logged", event=call.event)
         return GateResult(ALLOW, "logged", None, False, resp)
 
     if not call.is_pre_tool:
-        resp = hook_response(ALLOW, "not a tool gate")
+        resp = hook_response(ALLOW, "not a tool gate", event=call.event)
         return GateResult(ALLOW, "not a tool gate", None, False, resp)
 
     mode = pol.effective_mode()
@@ -158,13 +171,13 @@ def gate_call(
         if audit:
             audit_append(home, {"event": "deny", "why": "frozen", "mode": mode, "summary": call.summary})
         notify("Vigil · frozen", call.summary, urgency="critical", alert=pol.alert)
-        resp = hook_response(DENY, reason)
+        resp = hook_response(DENY, reason, event=call.event)
         return GateResult(DENY, reason, None, False, resp)
 
     if mode == "off":
         if audit:
             audit_append(home, {"event": "allow", "why": "off", "mode": mode, "summary": call.summary, "path": call.path})
-        resp = hook_response(ALLOW, "Vigil is off.")
+        resp = hook_response(ALLOW, "Vigil is off.", event=call.event)
         return GateResult(ALLOW, "Vigil is off.", None, False, resp)
 
     risk = classify(call)
@@ -290,7 +303,7 @@ def gate_call(
         )
         notify("Vigil denied", reason + "\n" + call.summary, urgency="critical", alert=pol.alert)
 
-    resp = hook_response(decision, reason)
+    resp = hook_response(decision, reason, event=call.event)
     return GateResult(decision, reason, risk, asked, resp)
 
 

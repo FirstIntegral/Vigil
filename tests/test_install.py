@@ -49,6 +49,7 @@ class InstallTests(unittest.TestCase):
             self.assertIn(helper, opath.read_text(encoding="utf-8"))
             plugin = opath.read_text(encoding="utf-8")
             self.assertIn("tool.execute.before", plugin)
+            self.assertIn("isPost", plugin)
             self.assertIn(str(HOOK_TIMEOUT_SEC * 1000), plugin)
             self.assertNotIn("__VIGIL_HOOK_TIMEOUT_MS__", plugin)
             body = json.loads(xpath.read_text(encoding="utf-8"))

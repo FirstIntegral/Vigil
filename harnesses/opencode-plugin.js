@@ -33,6 +33,16 @@ function runGate(eventName, tool, args, sessionId, directory) {
   }
   const specific = parsed.hookSpecificOutput || {}
   const decision = String(parsed.decision || specific.permissionDecision || "").toLowerCase()
+  const isPost = eventName === "post_tool_use" || eventName === "PostToolUse"
+  if (isPost) {
+    // Post cannot undo. Empty JSON is a quiet log (Grok rejects "allow" here).
+    if (decision === "deny" || decision === "block") {
+      const reason =
+        parsed.reason || specific.permissionDecisionReason || "Vigil denied the call."
+      throw new Error(reason)
+    }
+    return
+  }
   if (result.error || result.status !== 0 || decision === "deny" || decision === "") {
     const reason =
       parsed.reason || specific.permissionDecisionReason || "Vigil denied the call."

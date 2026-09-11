@@ -190,7 +190,7 @@ Panel {
     ]
     if (mode === "ask") return [
       { t: "ask - risky calls wait" },
-      { k: "m", t: "back to seatbelt" },
+      { k: "m", t: "cycles mode" },
       { k: "esc", t: "closes" }
     ]
     if (waiting > 0) return [

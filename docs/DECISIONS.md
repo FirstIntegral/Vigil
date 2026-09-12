@@ -174,3 +174,8 @@
 - Glass: ask hero said `m back to seatbelt`. `m` still runs `cycleMode()`: off → seatbelt → ask → frozen → off. From ask, next is frozen.
 - **Decision:** same chip as off/seatbelt — `m cycles mode`. Cycle order stays. Version stays **0.6.3**.
 - **Rejected:** making `m` jump to seatbelt from ask (README and the key row already mean cycle).
+
+## 2026-09-12 All four modes share one `m` hero
+- User: off and seatbelt said `m cycles mode`; ask said `m back to seatbelt`; frozen said `m leaves this`. Inconsistent.
+- **Decision:** one helper `modeCycleHint`: status + `m cycles mode` + `esc closes`. Off, seatbelt, ask, frozen all use it. Frozen no longer pairs `f or m leaves this` (`f` stays on the key row: freeze/unfreeze). Cycle order unchanged. Version stays **0.6.3**.
+- **Rejected:** per-mode destinations for `m` (back to seatbelt / leaves this). `m` is a cycle, not a jump.

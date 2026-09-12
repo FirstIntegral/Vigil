@@ -160,6 +160,15 @@ Panel {
 
   // Caption-sized `m` in JetBrains Mono paints as a filled box. Same chips
   // as the key row (bold bodySmall, native render, no unicode in the run).
+  // All four policy modes share this chip row so `m` never claims a jump.
+  function modeCycleHint(statusText) {
+    return [
+      { t: statusText },
+      { k: "m", t: "cycles mode" },
+      { k: "esc", t: "closes" }
+    ]
+  }
+
   readonly property var heroHint: {
     var mode = root.mode
     var frozen = root.frozen
@@ -177,32 +186,15 @@ Panel {
       { k: "w", t: "restore files" },
       { k: "n", t: "keep frozen" }
     ]
-    if (mode === "off") return [
-      { t: "off - nothing is held" },
-      { k: "m", t: "cycles mode" },
-      { k: "esc", t: "closes" }
-    ]
-    if (frozen) return [
-      { t: "frozen" },
-      { k: "f", t: "or" },
-      { k: "m", t: "leaves this" },
-      { k: "esc", t: "closes" }
-    ]
-    if (mode === "ask") return [
-      { t: "ask - risky calls wait" },
-      { k: "m", t: "cycles mode" },
-      { k: "esc", t: "closes" }
-    ]
+    if (mode === "off") return root.modeCycleHint("off - nothing is held")
+    if (frozen) return root.modeCycleHint("frozen - every call denied")
+    if (mode === "ask") return root.modeCycleHint("ask - risky calls wait")
     if (waiting > 0) return [
       { k: "y", t: "allow once" },
       { k: "n", t: "deny" },
       { k: "a", t: "always this class" }
     ]
-    return [
-      { t: "seatbelt (default)" },
-      { k: "esc", t: "closes" },
-      { k: "m", t: "cycles mode" }
-    ]
+    return root.modeCycleHint("seatbelt (default)")
   }
 
   KeyboardPanel {

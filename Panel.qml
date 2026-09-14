@@ -197,6 +197,18 @@ Panel {
     return root.modeCycleHint("seatbelt (default)")
   }
 
+  // Empty list copy is a second job from the hero. Mode off still
+  // scans /proc; it does not hold tool calls. Do not invite a launch
+  // as if Vigil will sit on the new session.
+  readonly property string emptySessionsText: {
+    if (!root.serviceReady) return ""
+    if (root.mode === "off")
+      return "No coding-agent processes. Off holds nothing. A launched agent still lists here, but tool calls pass."
+    if (root.mode === "frozen" || root.frozen)
+      return "No coding-agent processes. Frozen denies every tool call until you unfreeze."
+    return "No coding-agent processes. Launch Grok, Claude Code, OpenCode, Codex, or Cursor and they show up here."
+  }
+
   KeyboardPanel {
     id: panel
     anchorItem: root.anchorItem
@@ -407,8 +419,8 @@ Panel {
         }
 
         Text {
-          visible: root.sessions.length === 0
-          text: "No coding-agent processes. Launch Grok, Claude Code, OpenCode, Codex, or Cursor and they show up here."
+          visible: root.emptySessionsText !== "" && root.sessions.length === 0
+          text: root.emptySessionsText
           color: root.contentForeground
           opacity: 0.5
           font.family: root.contentFontFamily

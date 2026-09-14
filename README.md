@@ -66,7 +66,7 @@ Pressing **A** no longer saves the whole command string. It mints a **ticket**: 
 
 Press `m` to cycle. There are four global modes:
 
-**off.** Vigil does not hold anything. Full bypass. Use this when you truly want the agent unsupervised.
+**off.** Vigil does not hold anything. Full bypass. Use this when you truly want the agent unsupervised. The panel still lists live agents; kill, freeze, and panic still work. Hide the panel by disabling the plugin, not by cycling to off.
 
 **seatbelt (default).** Only deadly calls wait: deleting `/` or `$HOME`, piping the internet into a shell, formatting a disk, raw `dd` to a device, force-pushing `main`, killing the compositor, injecting a plugin, self-approving Vigil, reboot / shutdown.
 

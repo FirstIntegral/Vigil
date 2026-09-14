@@ -19,6 +19,7 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 - State dirs `0700`, files `0600`. Audit is hash-chained and redacted. No cloud.
 - Do not `vigil install` into a live session without a way to answer pending cards.
 - Do not become herdr / omarchy.agents / omaharness. Lid on hands, not the hands.
+- Mode **off** holds nothing. The process list, kill, freeze, and panic still run. Hide the panel by disabling the plugin, not by cycling to off.
 
 ## Continue here (Omarchy)
 

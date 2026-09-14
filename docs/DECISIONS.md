@@ -179,3 +179,9 @@
 - User: off and seatbelt said `m cycles mode`; ask said `m back to seatbelt`; frozen said `m leaves this`. Inconsistent.
 - **Decision:** one helper `modeCycleHint`: status + `m cycles mode` + `esc closes`. Off, seatbelt, ask, frozen all use it. Frozen no longer pairs `f or m leaves this` (`f` stays on the key row: freeze/unfreeze). Cycle order unchanged. Version stays **0.6.3**.
 - **Rejected:** per-mode destinations for `m` (back to seatbelt / leaves this). `m` is a cycle, not a jump.
+
+## 2026-09-14 Off empty-state does not invite a launch
+- Glass: mode off, no agents. Hero correctly said `off - nothing is held`. Body still said `Launch Grok, Claude Code, OpenCode, Codex, or Cursor and they show up here.` User: if it is off, why that line.
+- Empty copy keyed only on `sessions.length === 0`. Off is a gate mode, not plugin-off. Census, kill, freeze, panic stay. The launch line reads like Vigil is waiting to sit on a new session.
+- **Decision:** `emptySessionsText` is mode-aware and hidden until the service is ready. Off: holds nothing; a launched agent still lists here, but tool calls pass. Frozen: denies every tool call until unfreeze. Seatbelt/ask keep the launch line. README off paragraph says the list still works; hide the panel by disabling the plugin. Version stays **0.6.3**.
+- **Rejected:** hiding the process list in off (kill/panic would vanish). Treating off as uninstall (hooks stay loaded; gate returns allow). Same launch sentence in every mode.

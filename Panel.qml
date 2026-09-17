@@ -95,7 +95,9 @@ Panel {
       if (row && root.service) root.service.requestKill(row.pid)
     }
     else if (t === "a" || t === "A") {
-      if (root.service && root.agentCount > 0) root.service.requestKillAll()
+      if (root.pending.length && root.service)
+        root.service.decide(root.pending[0].id, "always")
+      else if (root.service && root.agentCount > 0) root.service.requestKillAll()
     }
     else if (t === "f" || t === "F") {
       if (!root.service) return
@@ -105,7 +107,7 @@ Panel {
     else if (t === "p" || t === "P") {
       if (root.service) root.service.panic()
     }
-    else if (t === "i" || t === "I") {
+    else if (t === "h" || t === "H") {
       if (root.service) root.service.installHooks()
     }
     else if (t === "m" || t === "M") {
@@ -114,7 +116,7 @@ Panel {
     else if (t === "t" || t === "T") {
       if (root.service) root.service.cycleAlert()
     }
-    else if (t === "h" || t === "H") {
+    else if (t === "b" || t === "B") {
       if (root.service) root.service.trustHour()
     }
     else if (t === "u" || t === "U") {
@@ -179,10 +181,10 @@ Panel {
     if (!root.serviceReady) return [{ t: "scanning..." }]
     if (!hooks) {
       if (autoArm) return [{ t: "starting watch - new sessions will be seated" }]
-      return [{ t: "watching off" }, { k: "i", t: "start again" }]
+      return [{ t: "watching off" }, { k: "h", t: "start again" }]
     }
     if (incident) return [
-      { k: "u", t: "let them run" },
+      { k: "f", t: "let them run" },
       { k: "w", t: "restore files" },
       { k: "n", t: "keep frozen" }
     ]
@@ -535,8 +537,8 @@ Panel {
               ["f", "freeze"],
               ["p", "panic"],
               ["m", "mode"],
-              ["i", "hooks"],
-              ["e", "lease"],
+              ["h", "hooks"],
+              ["e", "envelope"],
               ["r", "refresh"],
               ["w", "rewind"],
               ["l", "lid"]

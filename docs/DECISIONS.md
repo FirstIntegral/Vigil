@@ -192,3 +192,8 @@
 - `brwsk.vigil` is unused in the Omarchy marketplace registry (not listed, not retired). After listing, ids are permanent — this rename has to happen before submit.
 - Live tree on this machine stays `~/.config/omarchy/plugins/xyz.brwsk.vigil/` until a human `omarchy plugin remove xyz.brwsk.vigil` then `omarchy plugin add … --enable`. Agents cannot do that (Article V).
 - **Rejected:** keeping `xyz.brwsk.vigil` after the user named `brwsk.vigil`; renaming XDG paths or the CLI; writing the live plugin directory from an agent.
+
+## 2026-09-17 Panel keys use the first letter of the command
+- User: `p` panic and `m` mode make sense; `i` for hooks does not. Use the first letter. If that letter is taken, pick another.
+- **Decision:** `h` arms hooks. Trust-hour moves to `b` (`t` is toast, `h` is hooks, overlay `s` is session-allow). Footer `lease` relabels to `envelope` so it matches `e`. `j/k` stay move (`m` is mode). `x` stays kill (`k` is move-up). `w` stays rewind (`r` is refresh). Incident “let them run” is `f` (unfreeze), not `u` (`u` is trust-until-lock). Waiting `a` now mints always when a card is pending; otherwise it is still kill-all. Version **0.6.5**. Overlay Y/N/S/A/D unchanged (already first-letter, and deadly hides S/A).
+- **Rejected:** keeping `i` for hooks; giving trust `t` (toast) or `s` (session on the card).

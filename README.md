@@ -56,7 +56,7 @@ Pressing **A** no longer saves the whole command string. It mints a **ticket**: 
 
 **Today's note.** The panel shows today's counts. `vigil brief` and `vigil log` print the same numbers. This is not a popup that blocks work.
 
-**Trust until lock.** Press `u`, or `vigil trust --until-lock`. Deadly calls still stop. Locking the screen ends the trust window.
+**Trust until lock.** Press `u` on the panel, or `vigil trust --until-lock`. Deadly calls still stop. Locking the screen ends the trust window.
 
 **Pause on freeze.** Lock or Panic still freezes hooked calls. Freeze also sends SIGSTOP to every classified agent, including ones without a hook. Unlocking does not continue them. Unfreeze does.
 
@@ -78,7 +78,7 @@ Press `m` to cycle. There are four global modes:
 
 **Alerts** default to **both**: a bar glyph plus a short line like `Grok is trying to rm -rf /`, and a native Omarchy toast. Press `t` to cycle `bar` / `toast` / `both`.
 
-**Trust.** Press `h` to treat this project as seatbelt for one hour, even if the global mode is ask. Deadly calls still stop.
+**Trust.** Press `b` to treat this project as seatbelt for one hour, even if the global mode is ask. Deadly calls still stop. `t` is toast; `h` is hooks.
 
 ## Install (Omarchy only)
 
@@ -92,11 +92,11 @@ Or over SSH:
 omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable
 ```
 
-Enable the plugin. The bar starts watching on its own. You do not press `i` for a normal install.
+Enable the plugin. The bar starts watching on its own. You do not press `h` for a normal install.
 
 Restart the agent session so it loads the hook. Left-click the eye in the bar.
 
-If you ran `vigil uninstall` on purpose, watching stays off until you press `i` (or run install from a human terminal).
+If you ran `vigil uninstall` on purpose, watching stays off until you press `h` (or run install from a human terminal).
 
 Do not arm hooks in a session you still need unblocked unless the overlay (or `vigil decide` from a **human** terminal) is ready to answer cards.
 
@@ -175,7 +175,7 @@ Do this on Omarchy, not on Ubuntu.
 
 1. Confirm GitHub SSH works: `ssh -T git@github.com`
 2. Add and enable the plugin (command above).
-3. Press `i` in the Vigil panel, or run the `install` command above.
+3. Press `h` in the Vigil panel, or run the `install` command above.
 4. Quit and restart the agent so the hook actually loads. `install` arms Grok, OpenCode, Codex, and Claude Code (if `~/.claude/settings.json` exists). Cursor and the rest stay unhooked — see [Harnesses](#harnesses).
 5. Run something harmless (`pytest` in a project). Nothing should pop up.
 6. From a **human** terminal, not from an agent:
@@ -199,16 +199,16 @@ If step 6 never appears, check that `~/.grok/hooks/vigil.json` exists (and Claud
 | `S` | Allow this class for the rest of the session |
 | `A` | Mint a ticket (this agent × this project × this class) |
 | `D` | Deny-always that ticket |
-| `U` | Unfreeze (after lid / incident) |
+| `U` | Unfreeze (after lid / incident, on the card) |
 | `W` | Rewind this session’s tracked files |
 | `M` | Cycle mode |
 | `E` | Cycle envelope on the selected agent |
 | `L` | Lid on / off |
 | `F` | Freeze / unfreeze |
 | `P` | Panic (freeze + kill all classified agents) |
-| `T` | Cycle alerts |
-| `H` | Trust this project for one hour |
-| `I` | Arm hooks |
+| `T` | Cycle alerts (toast) |
+| `B` | Trust this project for one hour (`t` toast, `h` hooks, `s` is session on the card) |
+| `H` | Arm hooks |
 
 ## Limitations
 

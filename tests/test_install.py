@@ -72,6 +72,31 @@ class InstallTests(unittest.TestCase):
             grok.write_text(json.dumps(doc), encoding="utf-8")
             self.assertFalse(hooks_installed(home, helper)["grok"])
 
+    def test_stale_helper_path_counts_as_missing(self) -> None:
+        with TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            old = "/plugins/xyz.brwsk.vigil/bin/vigil"
+            new = "/plugins/brwsk.vigil/bin/vigil"
+            install(home, old)
+            stale = hooks_installed(home, new)
+            self.assertFalse(stale["grok"])
+            self.assertFalse(stale["opencode"])
+            self.assertFalse(stale["codex"])
+            live = hooks_installed(home, old)
+            self.assertTrue(live["grok"])
+            self.assertTrue(live["opencode"])
+            self.assertTrue(live["codex"])
+            install(home, new)
+            rewritten = hooks_installed(home, new)
+            self.assertTrue(rewritten["grok"])
+            self.assertTrue(rewritten["opencode"])
+            self.assertTrue(rewritten["codex"])
+            grok = json.loads((home / ".grok" / "hooks" / "vigil.json").read_text())
+            self.assertEqual(
+                grok["hooks"]["PreToolUse"][0]["hooks"][0]["command"],
+                f"{new} gate",
+            )
+
     def test_claude_merge_keeps_other_hooks(self) -> None:
         settings = {
             "hooks": {

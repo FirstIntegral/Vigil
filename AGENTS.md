@@ -25,13 +25,11 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This machine is Omarchy (hostname `omarchy`). Session files are gitignored, so a fresh clone will not have `session_compact.md` — create it from the `create_project` template on first session here. Resume from `session_compact.md` (when present) + this file + `docs/DECISIONS.md`.
 
-Version **0.6.5**. Plugin id `brwsk.vigil` (was `xyz.brwsk.vigil` until 2026-09-17). Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Hooks auto-arm when the plugin is enabled.
+Version **0.6.6**. Plugin id `brwsk.vigil` (was `xyz.brwsk.vigil` until 2026-09-17). Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Hooks auto-arm when the plugin is enabled.
 
 1. GitHub SSH works on this box (`ssh -T git@github.com`).
-2. Live plugin on this machine may still be the old id `xyz.brwsk.vigil` until a **human** removes it and adds this repo again. Agents cannot run `omarchy plugin add|remove`. After that:
-   Live copy: `~/.config/omarchy/plugins/brwsk.vigil/` (what Omarchy loads).
-   Dev clone: `~/Projects/Vigil`. Keep the plugin tree's `origin` as `git@github.com:FirstIntegral/Vigil.git` (capital V).
-3. Hooks auto-arm when the plugin service sees them missing (`autoArm` default on). Uninstall sets `autoArm=false`; press `h` to arm again. Agents still cannot run `vigil install`.
+2. Live copy: `~/.config/omarchy/plugins/brwsk.vigil/` (Omarchy loads this). Old `xyz.brwsk.vigil` is gone. Dev clone: `~/Projects/Vigil`. Keep the plugin tree's `origin` as `git@github.com:FirstIntegral/Vigil.git` (capital V). Agents cannot run `omarchy plugin add|remove`.
+3. `hooks_installed` requires the **current** helper path (0.6.6). A leftover `xyz.brwsk.vigil` hook is missing, so auto-arm rewrites it. Live tree must be pulled to 0.6.6 for that. Until then: panel **h**, then restart agent sessions. Agents still cannot run `vigil install`. Uninstall sets `autoArm=false`; press `h` to arm again.
 4. Restart the agent session so the hook loads.
 5. Prove the loop on glass:
    - `pytest` / project edits stay silent

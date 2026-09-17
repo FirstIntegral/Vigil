@@ -97,6 +97,19 @@ def _is_our_handler(handler: Any, helper: str) -> bool:
     return MARKER in command or helper in command
 
 
+def _is_current_handler(handler: Any, helper: str) -> bool:
+    """True only when the command uses this helper path.
+
+    Marker-only matching would treat a leftover
+    ``xyz.brwsk.vigil/bin/vigil gate`` as live after an id rename.
+    Strip/merge still uses ``_is_our_handler`` so the old path is removed.
+    """
+    if not isinstance(handler, dict):
+        return False
+    command = str(handler.get("command") or "").strip()
+    return command == f"{helper} gate" or command.startswith(helper + " ")
+
+
 def _strip_event(groups: list[Any], helper: str) -> list[Any]:
     kept = []
     for group in groups:
@@ -152,7 +165,7 @@ def strip_claude_hooks(settings: dict[str, Any], helper: str) -> dict[str, Any]:
     return out
 
 
-def _pretool_timeouts(doc: Any, helper: str) -> list[int]:
+def _pretool_timeouts(doc: Any, helper: str, *, current: bool = False) -> list[int]:
     out: list[int] = []
     if not isinstance(doc, dict):
         return out
@@ -162,6 +175,7 @@ def _pretool_timeouts(doc: Any, helper: str) -> list[int]:
     pre = hooks.get("PreToolUse")
     if not isinstance(pre, list):
         return out
+    match = _is_current_handler if current else _is_our_handler
     for group in pre:
         if not isinstance(group, dict):
             continue
@@ -169,7 +183,7 @@ def _pretool_timeouts(doc: Any, helper: str) -> list[int]:
         if not isinstance(handlers, list):
             continue
         for handler in handlers:
-            if not _is_our_handler(handler, helper):
+            if not match(handler, helper):
                 continue
             try:
                 out.append(int(handler.get("timeout")))
@@ -179,18 +193,16 @@ def _pretool_timeouts(doc: Any, helper: str) -> list[int]:
 
 
 def _json_hook_fresh(text: str, helper: str) -> bool:
-    if MARKER not in text and helper not in text:
-        return False
     try:
         doc = json.loads(text)
     except json.JSONDecodeError:
         return False
-    timeouts = _pretool_timeouts(doc, helper)
+    timeouts = _pretool_timeouts(doc, helper, current=True)
     return bool(timeouts) and all(t >= HOOK_TIMEOUT_SEC for t in timeouts)
 
 
 def _opencode_hook_fresh(text: str, helper: str) -> bool:
-    if MARKER not in text and helper not in text:
+    if f'const HELPER = "{helper}"' not in text and f"const HELPER = '{helper}'" not in text:
         return False
     return str(HOOK_TIMEOUT_SEC * 1000) in text
 

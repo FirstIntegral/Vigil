@@ -123,7 +123,7 @@ Vigil does two different jobs. Do not mix them up.
 
 The bar lists these processes. Panic sends SIGTERM to every one of them. Freeze and lock also SIGSTOP every classified process, including ones with no hook. Unlocking does not continue them. Unfreeze does. A process Vigil does not name is still invisible here: ChatGPT in a browser, a Cursor GUI with no `cursor-agent` binary, and anything else.
 
-**The seatbelt sits on a hook.** That is a PreToolUse / PostToolUse command the *harness* has to load. `vigil install` (panel `i`) writes only these:
+**The seatbelt sits on a hook.** That is a PreToolUse / PostToolUse command the *harness* has to load. `vigil install` (panel `h`) writes only these:
 
 | Harness | What `install` does |
 | --- | --- |

@@ -10,7 +10,7 @@ from vigil.validate import validate_manifest_obj, validate_plugin_dir
 
 MINIMAL = {
     "schemaVersion": 1,
-    "id": "xyz.brwsk.vigil",
+    "id": "brwsk.vigil",
     "name": "Vigil",
     "version": "0.1.0",
     "kinds": ["service", "bar-widget"],

@@ -14,7 +14,7 @@ class CliTests(unittest.TestCase):
         with patch("sys.stdout", buf):
             rc = main(["version"])
         self.assertEqual(rc, 0)
-        self.assertIn("xyz.brwsk.vigil", buf.getvalue())
+        self.assertIn("brwsk.vigil", buf.getvalue())
 
     def test_kill_all_requires_yes(self) -> None:
         err = StringIO()
@@ -33,7 +33,7 @@ class CliTests(unittest.TestCase):
             self.assertEqual(rc, 0)
             data = json.loads(buf.getvalue())
             self.assertEqual(data["schemaVersion"], 1)
-            self.assertEqual(data["pluginId"], "xyz.brwsk.vigil")
+            self.assertEqual(data["pluginId"], "brwsk.vigil")
             self.assertIsInstance(data["sessions"], list)
             self.assertIn("agents", data["totals"])
             self.assertIn("lid", data)

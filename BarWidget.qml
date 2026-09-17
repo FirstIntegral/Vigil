@@ -9,9 +9,9 @@ import qs.Commons
 // the count and hosts the panel.
 BarWidget {
   id: root
-  moduleName: "xyz.brwsk.vigil"
+  moduleName: "brwsk.vigil"
 
-  readonly property var service: bar && bar.shell ? bar.shell.serviceFor("xyz.brwsk.vigil") : null
+  readonly property var service: bar && bar.shell ? bar.shell.serviceFor("brwsk.vigil") : null
   readonly property string label: service ? service.barLabel : "…"
   readonly property string glyph: service ? service.glyph : "󰈈"
   readonly property bool alarming: service ? service.alarming : false
@@ -86,7 +86,7 @@ BarWidget {
   }
 
   IpcHandler {
-    target: "xyz.brwsk.vigil"
+    target: "brwsk.vigil"
     function open(): void { root.open() }
     function close(): void { root.close() }
     function show(): void { root.open() }

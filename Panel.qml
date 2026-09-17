@@ -7,12 +7,12 @@ import qs.Ui
 // Ops panel: every live coding agent, a two-step kill, keyboard-first.
 Panel {
   id: root
-  moduleName: "xyz.brwsk.vigil"
+  moduleName: "brwsk.vigil"
 
   property var anchorItem: null
   property var hostWidget: null
   readonly property var barIdentity: hostWidget || root
-  readonly property var service: bar && bar.shell ? bar.shell.serviceFor("xyz.brwsk.vigil") : null
+  readonly property var service: bar && bar.shell ? bar.shell.serviceFor("brwsk.vigil") : null
   readonly property bool serviceReady: service && service.ready === true
   readonly property var sessions: service ? service.sessions : []
   readonly property int sessionsRevision: service ? service.sessionsRevision : 0

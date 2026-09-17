@@ -163,7 +163,7 @@ class SelfApproveBypassTests(unittest.TestCase):
         self.assertEqual(classify(bash("vigil uninstall")).class_id, "self-approve")
 
     def test_plugin_tree_write(self) -> None:
-        risk = classify(write("/home/brwsk/.config/omarchy/plugins/xyz.brwsk.vigil/Overlay.qml"))
+        risk = classify(write("/home/brwsk/.config/omarchy/plugins/brwsk.vigil/Overlay.qml"))
         self.assertEqual(risk.decision, DENY)
         self.assertEqual(risk.class_id, "plugin-inject")
 

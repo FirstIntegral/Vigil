@@ -185,3 +185,10 @@
 - Empty copy keyed only on `sessions.length === 0`. Off is a gate mode, not plugin-off. Census, kill, freeze, panic stay. The launch line reads like Vigil is waiting to sit on a new session.
 - **Decision:** `emptySessionsText` is mode-aware and hidden until the service is ready. Off: holds nothing; a launched agent still lists here, but tool calls pass. Frozen: denies every tool call until unfreeze. Seatbelt/ask keep the launch line. README off paragraph says the list still works; hide the panel by disabling the plugin. Version stays **0.6.3**.
 - **Rejected:** hiding the process list in off (kill/panic would vanish). Treating off as uninstall (hooks stay loaded; gate returns allow). Same launch sentence in every mode.
+
+## 2026-09-17 Plugin id is brwsk.vigil
+- User: drop the `xyz.` reverse-domain prefix. Marketplace listing has not happened, so the id is still free. `manifest.json` `id` is the plugin id.
+- **Decision:** plugin id **`brwsk.vigil`**. Canonical field is `manifest.json` `id`. QML `moduleName` / `serviceFor` / IPC targets and Python `PLUGIN_ID` follow it. CLI `bin/vigil`, Python package `vigil/`, XDG `~/.config/vigil` and `~/.local/state/vigil` stay lowercase and unchanged. Version **0.6.4**. Root `preview.png` is the marketplace card (live panel shot).
+- `brwsk.vigil` is unused in the Omarchy marketplace registry (not listed, not retired). After listing, ids are permanent — this rename has to happen before submit.
+- Live tree on this machine stays `~/.config/omarchy/plugins/xyz.brwsk.vigil/` until a human `omarchy plugin remove xyz.brwsk.vigil` then `omarchy plugin add … --enable`. Agents cannot do that (Article V).
+- **Rejected:** keeping `xyz.brwsk.vigil` after the user named `brwsk.vigil`; renaming XDG paths or the CLI; writing the live plugin directory from an agent.

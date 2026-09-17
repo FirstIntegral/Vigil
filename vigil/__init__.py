@@ -1,7 +1,7 @@
 """Vigil — permission broker for coding agents on Omarchy."""
 
-__version__ = "0.6.3"
-PLUGIN_ID = "xyz.brwsk.vigil"
+__version__ = "0.6.4"
+PLUGIN_ID = "brwsk.vigil"
 SNAPSHOT_SCHEMA = 1
 POLICY_SCHEMA = 1
 # Card window. Harness timeout must exceed this so Vigil denies before

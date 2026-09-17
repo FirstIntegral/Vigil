@@ -15,7 +15,7 @@ Item {
   property bool opened: false
   property var request: null
 
-  readonly property var service: shell && shell.serviceFor ? shell.serviceFor("xyz.brwsk.vigil") : null
+  readonly property var service: shell && shell.serviceFor ? shell.serviceFor("brwsk.vigil") : null
   readonly property var pending: service && service.pending ? service.pending : []
   readonly property var current: {
     if (pending && pending.length) return pending[0]
@@ -70,7 +70,7 @@ Item {
   }
 
   IpcHandler {
-    target: "xyz.brwsk.vigil.overlay"
+    target: "brwsk.vigil.overlay"
     function open(payloadJson: string): string { root.open(payloadJson); return "ok" }
     function close(): string { root.close(); return "ok" }
   }

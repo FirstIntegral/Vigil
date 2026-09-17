@@ -10,6 +10,8 @@ Fast agents are the point. The seatbelt is not a nanny. If you want YOLO, you st
 
 ## What it looks like
 
+![Vigil panel on the Omarchy bar](preview.png)
+
 You pick a default agent. It runs as usual.
 
 Vigil sits on the agent’s **tool-call hook**. It does not sit on the harness “ask” prompt, because YOLO would auto-allow that and the seatbelt would be fake.
@@ -146,13 +148,13 @@ The gate JSON is Grok camelCase (`toolName`, `hookEventName`, `toolInput`) and C
 Disarm the hooks first, while the plugin is still on disk:
 
 ```
-python3 ~/.config/omarchy/plugins/xyz.brwsk.vigil/bin/vigil uninstall
+python3 ~/.config/omarchy/plugins/brwsk.vigil/bin/vigil uninstall
 ```
 
 Then remove the plugin from Omarchy:
 
 ```
-omarchy plugin remove xyz.brwsk.vigil
+omarchy plugin remove brwsk.vigil
 ```
 
 That does not delete `~/.config/vigil` or `~/.local/state/vigil`. Those directories are your tickets and black box. Delete them yourself if you want them gone.
@@ -179,7 +181,7 @@ Do this on Omarchy, not on Ubuntu.
 6. From a **human** terminal, not from an agent:
 
    ```
-   python3 ~/.config/omarchy/plugins/xyz.brwsk.vigil/bin/vigil prove
+   python3 ~/.config/omarchy/plugins/brwsk.vigil/bin/vigil prove
    ```
 
    That mints the real polkit card, bar line, and toast for a **drill**. Nothing is deleted. Deny it.
@@ -316,4 +318,4 @@ bash scripts/test.sh
 
 The hot path is `bin/vigil gate` on every tool call. The next compile target is **Rust** (lowest RSS, no garbage collector). The QML skin stays QML, because that is what Omarchy paints.
 
-Plugin id: `xyz.brwsk.vigil`.
+Plugin id: `brwsk.vigil`.

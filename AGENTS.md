@@ -36,7 +36,7 @@ Version **0.6.7**. Plugin id `brwsk.vigil` (was `xyz.brwsk.vigil` until 2026-09-
    - **human** terminal: `python3 bin/vigil prove` — polkit card + bar + toast; nothing is deleted; deny it
    - live hook: ask the agent to run `vigil-glass-proof` (command-not-found if the hook is missing). Never ask it to delete `/`
    - lock the screen → agents freeze; unlock does **not** unfreeze; card offers keep frozen / let them run / restore files
-6. Marketplace listing needs a public GitHub repo — done (2026-09-05).
+6. Marketplace listing: public repo done. Issue **#7376** https://github.com/omacom/omarchy-plugin-marketplace/issues/7376 — validated at `e6c360d`, waiting on maintainer `approved-and-verified`. Title must stay `[Plugin]: Vigil`. Do not open a second issue. Do not rewrite copy to dodge the security baseline.
 
 Do **not** `vigil install` on Ubuntu or any non-Omarchy host. Do not become herdr / `omarchy.agents` / omaharness. Do not return harness `ask`. Overlay IPC must stay `open`/`close` only.
 

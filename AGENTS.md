@@ -25,11 +25,11 @@ Omarchy Quattro plugin: seatbelt for coding agents. Default mode lets YOLO run; 
 
 This machine is Omarchy (hostname `omarchy`). Session files are gitignored, so a fresh clone will not have `session_compact.md` — create it from the `create_project` template on first session here. Resume from `session_compact.md` (when present) + this file + `docs/DECISIONS.md`.
 
-Version **0.6.6**. Plugin id `brwsk.vigil` (was `xyz.brwsk.vigil` until 2026-09-17). Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Hooks auto-arm when the plugin is enabled.
+Version **0.6.7**. Plugin id `brwsk.vigil` (was `xyz.brwsk.vigil` until 2026-09-17). Default **mode=seatbelt**, **alert=both**. Public remote `git@github.com:FirstIntegral/Vigil.git` (HTTPS works read-only). Hooks auto-arm when the plugin is enabled.
 
 1. GitHub SSH works on this box (`ssh -T git@github.com`).
 2. Live copy: `~/.config/omarchy/plugins/brwsk.vigil/` (Omarchy loads this). Old `xyz.brwsk.vigil` is gone. Dev clone: `~/Projects/Vigil`. Keep the plugin tree's `origin` as `git@github.com:FirstIntegral/Vigil.git` (capital V). Agents cannot run `omarchy plugin add|remove`.
-3. `hooks_installed` requires the **current** helper path (0.6.6). A leftover `xyz.brwsk.vigil` hook is missing, so auto-arm rewrites it. Live tree must be pulled to 0.6.6 for that. Until then: panel **h**, then restart agent sessions. Agents still cannot run `vigil install`. Uninstall sets `autoArm=false`; press `h` to arm again.
+3. `hooks_installed` requires the current helper (stable `~/.config/vigil/bin/vigil` or this plugin bin) and that the file exists (0.6.6/0.6.7). A leftover `xyz.brwsk.vigil` hook is missing, so auto-arm rewrites it. Grok/Claude get PreToolUse only; Codex/OpenCode keep PostToolUse. Surprise-write is a PreToolUse deny. Live tree must be pulled to 0.6.7 for that. Until then: panel **h**, then restart agent sessions. Agents still cannot run `vigil install`. Uninstall sets `autoArm=false`; press `h` to arm again. Panel `h` prints rewrite/refuse on the panel.
 4. Restart the agent session so the hook loads.
 5. Prove the loop on glass:
    - `pytest` / project edits stay silent

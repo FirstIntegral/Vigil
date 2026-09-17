@@ -3,17 +3,46 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
 from vigil import HOOK_TIMEOUT_SEC, PLUGIN_ID
 from vigil.house import skill_markdown
 from vigil.machine import write as write_machine
+from vigil.paths import config_dir
 from vigil.policy import load_policy, save_policy
 from vigil.secure import write_private
 
 
 MARKER = "vigil gate"
+
+
+def stable_helper_path(home: Path) -> Path:
+    """XDG helper the harness calls. Plugin id changes must not 127."""
+    return config_dir(home) / "bin" / "vigil"
+
+
+def write_stable_helper(home: Path, plugin_bin: str) -> Path:
+    dest = stable_helper_path(home)
+    plugin_id = PLUGIN_ID
+    body = (
+        "#!/bin/sh\n"
+        "# Stable Vigil helper. The plugin directory may move; this path does not.\n"
+        "set -eu\n"
+        f'PLUGIN_BIN="{plugin_bin}"\n'
+        f'PLUGIN_ID_BIN="$HOME/.config/omarchy/plugins/{plugin_id}/bin/vigil"\n'
+        'if [ -x "$PLUGIN_BIN" ]; then exec "$PLUGIN_BIN" "$@"; fi\n'
+        'if [ -x "$PLUGIN_ID_BIN" ]; then exec "$PLUGIN_ID_BIN" "$@"; fi\n'
+        'for p in "$HOME/.config/omarchy/plugins/"*/bin/vigil; do\n'
+        '  if [ -x "$p" ]; then exec "$p" "$@"; fi\n'
+        "done\n"
+        'echo "vigil: plugin helper missing" >&2\n'
+        "exit 127\n"
+    )
+    write_private(dest, body)
+    os.chmod(dest, 0o700)
+    return dest
 
 
 def grok_hook_document(helper: str) -> dict[str, Any]:
@@ -25,7 +54,6 @@ def grok_hook_document(helper: str) -> dict[str, Any]:
     return {
         "hooks": {
             "PreToolUse": [{"hooks": [handler]}],
-            "PostToolUse": [{"hooks": [{**handler, "timeout": 5}]}],
         }
     }
 
@@ -83,7 +111,7 @@ def codex_hook_document(helper: str) -> dict[str, Any]:
 
 
 def merge_codex_hooks(doc: dict[str, Any], helper: str) -> dict[str, Any]:
-    return merge_claude_hooks(doc, helper)
+    return merge_claude_hooks(doc, helper, post=True)
 
 
 def strip_codex_hooks(doc: dict[str, Any], helper: str) -> dict[str, Any]:
@@ -128,19 +156,34 @@ def _strip_event(groups: list[Any], helper: str) -> list[Any]:
     return kept
 
 
-def merge_claude_hooks(settings: dict[str, Any], helper: str) -> dict[str, Any]:
+def merge_claude_hooks(
+    settings: dict[str, Any], helper: str, *, post: bool = False
+) -> dict[str, Any]:
+    """Merge Vigil into a Claude-shaped hooks file.
+
+    ``post=False`` (Claude default): Grok also loads ``~/.claude/settings.json``.
+    A Vigil PostToolUse there is a TUI failure line on every Grok tool call
+    when the helper 127s, and a second spawn when it does not. Surprise-write
+    now runs on PreToolUse. ``post=True`` keeps Codex after-hooks.
+    """
     hooks = settings.get("hooks")
     if not isinstance(hooks, dict):
         hooks = {}
     new_hooks = dict(hooks)
     pre = hooks.get("PreToolUse") if isinstance(hooks.get("PreToolUse"), list) else []
-    post = hooks.get("PostToolUse") if isinstance(hooks.get("PostToolUse"), list) else []
+    post_groups = hooks.get("PostToolUse") if isinstance(hooks.get("PostToolUse"), list) else []
     new_hooks["PreToolUse"] = _strip_event(pre, helper) + [
         {"hooks": [{"type": "command", "command": f"{helper} gate", "timeout": HOOK_TIMEOUT_SEC}]}
     ]
-    new_hooks["PostToolUse"] = _strip_event(post, helper) + [
-        {"hooks": [{"type": "command", "command": f"{helper} gate", "timeout": 5}]}
-    ]
+    stripped_post = _strip_event(post_groups, helper)
+    if post:
+        new_hooks["PostToolUse"] = stripped_post + [
+            {"hooks": [{"type": "command", "command": f"{helper} gate", "timeout": 5}]}
+        ]
+    elif stripped_post:
+        new_hooks["PostToolUse"] = stripped_post
+    else:
+        new_hooks.pop("PostToolUse", None)
     out = dict(settings)
     out["hooks"] = new_hooks
     return out
@@ -198,7 +241,9 @@ def _json_hook_fresh(text: str, helper: str) -> bool:
     except json.JSONDecodeError:
         return False
     timeouts = _pretool_timeouts(doc, helper, current=True)
-    return bool(timeouts) and all(t >= HOOK_TIMEOUT_SEC for t in timeouts)
+    if not (timeouts and all(t >= HOOK_TIMEOUT_SEC for t in timeouts)):
+        return False
+    return Path(helper).is_file()
 
 
 def _opencode_hook_fresh(text: str, helper: str) -> bool:
@@ -207,33 +252,48 @@ def _opencode_hook_fresh(text: str, helper: str) -> bool:
     return str(HOOK_TIMEOUT_SEC * 1000) in text
 
 
+def _fresh_any(text: str, *helpers: str, kind: str = "json") -> bool:
+    for helper in helpers:
+        if not helper:
+            continue
+        if kind == "opencode":
+            if _opencode_hook_fresh(text, helper) and Path(helper).is_file():
+                return True
+        elif _json_hook_fresh(text, helper):
+            return True
+    return False
+
+
 def hooks_installed(home: Path, helper: str) -> dict[str, bool]:
+    stable = str(stable_helper_path(home))
     grok_ok = False
     grok = grok_hook_path(home)
     if grok.is_file():
         try:
-            grok_ok = _json_hook_fresh(grok.read_text(encoding="utf-8"), helper)
+            grok_ok = _fresh_any(grok.read_text(encoding="utf-8"), stable, helper)
         except OSError:
             grok_ok = False
     claude_ok = False
     cpath = claude_settings_path(home)
     if cpath.is_file():
         try:
-            claude_ok = _json_hook_fresh(cpath.read_text(encoding="utf-8"), helper)
+            claude_ok = _fresh_any(cpath.read_text(encoding="utf-8"), stable, helper)
         except OSError:
             claude_ok = False
     opencode_ok = False
     opath = opencode_plugin_path(home)
     if opath.is_file():
         try:
-            opencode_ok = _opencode_hook_fresh(opath.read_text(encoding="utf-8"), helper)
+            opencode_ok = _fresh_any(
+                opath.read_text(encoding="utf-8"), stable, helper, kind="opencode"
+            )
         except OSError:
             opencode_ok = False
     codex_ok = False
     xpath = codex_hooks_path(home)
     if xpath.is_file():
         try:
-            codex_ok = _json_hook_fresh(xpath.read_text(encoding="utf-8"), helper)
+            codex_ok = _fresh_any(xpath.read_text(encoding="utf-8"), stable, helper)
         except OSError:
             codex_ok = False
     return {"grok": grok_ok, "claude": claude_ok, "opencode": opencode_ok, "codex": codex_ok}
@@ -241,9 +301,11 @@ def hooks_installed(home: Path, helper: str) -> dict[str, bool]:
 
 def install(home: Path, helper: str) -> dict[str, str]:
     written: dict[str, str] = {}
+    hook_helper = str(write_stable_helper(home, helper))
+    written["stableHelper"] = hook_helper
     gpath = grok_hook_path(home)
     gpath.parent.mkdir(parents=True, exist_ok=True)
-    doc = grok_hook_document(helper)
+    doc = grok_hook_document(hook_helper)
     write_private(gpath, json.dumps(doc, indent=2) + "\n")
     written["grok"] = str(gpath)
 
@@ -255,7 +317,7 @@ def install(home: Path, helper: str) -> dict[str, str]:
             settings = {}
         if not isinstance(settings, dict):
             settings = {}
-        merged = merge_claude_hooks(settings, helper)
+        merged = merge_claude_hooks(settings, hook_helper)
         write_private(cpath, json.dumps(merged, indent=2) + "\n")
         written["claude"] = str(cpath)
     else:
@@ -263,7 +325,7 @@ def install(home: Path, helper: str) -> dict[str, str]:
 
     opath = opencode_plugin_path(home)
     opath.parent.mkdir(parents=True, exist_ok=True)
-    write_private(opath, opencode_plugin_source(helper))
+    write_private(opath, opencode_plugin_source(hook_helper))
     written["opencode"] = str(opath)
 
     xpath = codex_hooks_path(home)
@@ -275,9 +337,9 @@ def install(home: Path, helper: str) -> dict[str, str]:
             existing = {}
         if not isinstance(existing, dict):
             existing = {}
-        merged_x = merge_codex_hooks(existing, helper)
+        merged_x = merge_codex_hooks(existing, hook_helper)
     else:
-        merged_x = codex_hook_document(helper)
+        merged_x = codex_hook_document(hook_helper)
     write_private(xpath, json.dumps(merged_x, indent=2) + "\n")
     written["codex"] = str(xpath)
 
@@ -289,7 +351,8 @@ def install(home: Path, helper: str) -> dict[str, str]:
     skill_dest.write_text(body, encoding="utf-8")
     written["skill"] = str(skill_dest)
     written["plugin"] = PLUGIN_ID
-    written["helper"] = helper
+    written["helper"] = hook_helper
+    written["pluginHelper"] = helper
     written["machine"] = str(write_machine(home))
     policy = load_policy(home)
     policy.auto_arm = True
@@ -341,4 +404,10 @@ def uninstall(home: Path, helper: str) -> dict[str, str]:
     policy.auto_arm = False
     save_policy(home, policy)
     removed["autoArm"] = "off"
+    stable = stable_helper_path(home)
+    if stable.is_file():
+        stable.unlink()
+        removed["stableHelper"] = f"removed {stable}"
+    else:
+        removed["stableHelper"] = "absent"
     return removed

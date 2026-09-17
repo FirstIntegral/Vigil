@@ -175,6 +175,32 @@ class GateTests(unittest.TestCase):
             self.assertEqual(result.response, {})
             self.assertNotIn("decision", result.response)
 
+    def test_pre_surprise_write_denies_and_freezes(self) -> None:
+        with TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            proj = home / "proj"
+            proj.mkdir()
+            outside = home / "outside.txt"
+            outside.write_text("secret\n", encoding="utf-8")
+            link = proj / "escape"
+            link.symlink_to(outside)
+            result = gate_payload(
+                {
+                    "hookEventName": "pre_tool_use",
+                    "sessionId": "sess-1",
+                    "cwd": str(proj),
+                    "workspaceRoot": str(proj),
+                    "toolName": "write",
+                    "toolInput": {"target_file": str(link), "contents": "nope"},
+                },
+                home=home,
+            )
+            self.assertEqual(result.decision, DENY)
+            self.assertEqual(result.response["decision"], "deny")
+            from vigil.policy import load_policy
+
+            self.assertTrue(load_policy(home).frozen)
+
     def test_session_start_stdout_has_no_decision(self) -> None:
         with TemporaryDirectory() as tmp:
             result = gate_payload(

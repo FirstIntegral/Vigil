@@ -9,6 +9,7 @@ for the ask path; non-pre-tool events pass through).
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -144,26 +145,32 @@ def gate_call(
                 },
             )
         if _surprise(call):
-            pol.freeze()
-            save_policy(home, pol)
-            write_surprise(
-                home,
-                summary=call.summary,
-                path=call.path or "",
-                agent=call.agent_hint,
-            )
-            notify(
-                "Vigil · incident",
-                "An allowed write landed on a secret or outside the project.",
-                urgency="critical",
-                alert=pol.alert,
-            )
+            _freeze_surprise(home, call, pol)
         resp = hook_response(ALLOW, "logged", event=call.event)
         return GateResult(ALLOW, "logged", None, False, resp)
 
     if not call.is_pre_tool:
         resp = hook_response(ALLOW, "not a tool gate", event=call.event)
         return GateResult(ALLOW, "not a tool gate", None, False, resp)
+
+    if _surprise(call):
+        _freeze_surprise(home, call, pol)
+        reason = "An allowed write would land on a secret or outside the project."
+        if audit:
+            audit_append(
+                home,
+                {
+                    "event": "deny",
+                    "why": "surprise",
+                    "tool": call.tool,
+                    "summary": call.summary,
+                    "path": call.path,
+                    "agent": call.agent_hint,
+                    "sessionId": call.session_id,
+                },
+            )
+        resp = hook_response(DENY, reason, event=call.event)
+        return GateResult(DENY, reason, None, False, resp)
 
     mode = pol.effective_mode()
     if mode == "frozen":
@@ -321,6 +328,39 @@ def _project_owner(home: Path, cwd: str, passport_id: str) -> dict[str, Any] | N
     return None
 
 
+def _freeze_surprise(home: Path, call: ToolCall, pol: Policy) -> None:
+    if not pol.frozen:
+        pol.freeze()
+        save_policy(home, pol)
+    write_surprise(
+        home,
+        summary=call.summary,
+        path=call.path or "",
+        agent=call.agent_hint,
+    )
+    notify(
+        "Vigil · incident",
+        "An allowed write would land on a secret or outside the project.",
+        urgency="critical",
+        alert=pol.alert,
+    )
+
+
+def _looks_inside(path: str, root: str) -> bool:
+    """Declared path sits under root. Does not follow a symlink."""
+    if not path or not root:
+        return False
+    try:
+        base = Path(root).resolve()
+        declared = Path(path)
+        if not declared.is_absolute():
+            declared = base / declared
+        declared = Path(os.path.normpath(str(declared)))
+        return os.path.commonpath([str(declared), str(base)]) == str(base)
+    except (OSError, ValueError):
+        return False
+
+
 def _surprise(call) -> bool:
     """Allowed write whose real path is a secret or escaped the project."""
     if call.tool != "write" or not call.path:
@@ -329,14 +369,12 @@ def _surprise(call) -> bool:
         return False
     root = call.workspace or call.cwd
     try:
-        from pathlib import Path as P
-
-        real = str(P(call.path).resolve())
+        real = str(Path(call.path).resolve())
     except OSError:
         return False
     if is_secret_path(real):
         return True
-    if root and (not path_inside(real, root)) and path_inside(call.path, root):
+    if root and (not path_inside(real, root)) and _looks_inside(call.path, root):
         return True
     return False
 

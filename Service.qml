@@ -145,7 +145,9 @@ Item {
       else if (agentCount === 0) message = "No coding agents running."
       else message = ""
       lastError = ""
-      if (!root.hooksLive && root.autoArm && !root.autoInstallAttempted && !actionProc.running) {
+      if (root.hooksLive) {
+        root.autoInstallAttempted = false
+      } else if (root.autoArm && !root.autoInstallAttempted && !actionProc.running) {
         root.autoInstallAttempted = true
         root.installHooks()
       }
@@ -366,6 +368,32 @@ Item {
     id: actionProc
     running: false
     command: []
-    onExited: Qt.callLater(root.refresh)
+    onExited: function(exitCode) {
+      var cmd = actionProc.command
+      var isInstall = false
+      for (var i = 0; i < cmd.length; i++) {
+        if (String(cmd[i]) === "install") isInstall = true
+      }
+      if (isInstall) {
+        var payload = null
+        try { payload = JSON.parse(String(actionOut.text || "")) } catch (error) { payload = null }
+        if (exitCode === 0 && payload && payload.ok) {
+          root.killStatus = "Hooks rewritten. Restart agent sessions."
+        } else {
+          var err = payload && payload.error ? String(payload.error) : String(actionErr.text || "install refused")
+          root.killStatus = err
+        }
+        killStatusTimer.restart()
+      }
+      Qt.callLater(root.refresh)
+    }
+    stdout: StdioCollector {
+      id: actionOut
+      waitForEnd: true
+    }
+    stderr: StdioCollector {
+      id: actionErr
+      waitForEnd: true
+    }
   }
 }

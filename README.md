@@ -123,12 +123,12 @@ Vigil does two different jobs. Do not mix them up.
 
 The bar lists these processes. Panic sends SIGTERM to every one of them. Freeze and lock also SIGSTOP every classified process, including ones with no hook. Unlocking does not continue them. Unfreeze does. A process Vigil does not name is still invisible here: ChatGPT in a browser, a Cursor GUI with no `cursor-agent` binary, and anything else.
 
-**The seatbelt sits on a hook.** That is a PreToolUse / PostToolUse command the *harness* has to load. `vigil install` (panel `h`) writes only these:
+**The seatbelt sits on a hook.** That is a PreToolUse command the *harness* has to load (Codex and OpenCode also get a PostToolUse / after hook). `vigil install` (panel `h`) writes only these:
 
 | Harness | What `install` does |
 | --- | --- |
-| Grok | Always writes `~/.grok/hooks/vigil.json`. PreToolUse timeout is 330 seconds, PostToolUse is 5 seconds. The card waits 5 minutes. Grok hooks fail *open* if the file is missing, the command crashes, or the timeout fires — Vigil denies the call before that 330 seconds. Grok PostToolUse honors only `block`; the gate logs that event with empty JSON so every allowed call is not a failed hook. |
-| Claude Code | Merges the same `vigil gate` command into `~/.claude/settings.json` **if that file already exists**. It does not create Claude settings from scratch. |
+| Grok | Always writes `~/.grok/hooks/vigil.json`. PreToolUse only (timeout 330 seconds). Grok also loads Claude settings, so install strips Vigil’s PostToolUse from that file too — a leftover post hook is a TUI failure line on every tool when the helper is missing. The command is `~/.config/vigil/bin/vigil gate`, a stable wrapper that finds the live plugin. The card waits 5 minutes. Grok hooks fail *open* if the file is missing, the command crashes, or the timeout fires — Vigil denies the call before that 330 seconds. |
+| Claude Code | Merges PreToolUse `vigil gate` into `~/.claude/settings.json` **if that file already exists**. It does not create Claude settings from scratch. Vigil PostToolUse is stripped (Grok reads this file). |
 | OpenCode | Always writes `~/.config/opencode/plugins/vigil.js`. OpenCode loads that directory at startup. The plugin spawns `vigil gate` and throws on deny. |
 | Codex | Always writes `~/.codex/hooks.json` (merges if the file already exists). Same Claude-shaped JSON as the gate already parses. |
 | Cursor, Copilot CLI, Crush, Antigravity, Hermes, Ori | Not wired. |

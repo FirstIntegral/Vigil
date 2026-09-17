@@ -6,7 +6,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from vigil import ASK_WAIT_SEC, HOOK_TIMEOUT_SEC
-from vigil.install import grok_hook_document, hooks_installed, install, merge_claude_hooks, uninstall
+from vigil.install import (
+    grok_hook_document,
+    hooks_installed,
+    install,
+    merge_claude_hooks,
+    merge_codex_hooks,
+    stable_helper_path,
+    uninstall,
+)
 from vigil.policy import load_policy
 from vigil.secure import write_private
 
@@ -18,6 +26,7 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(handler["timeout"], HOOK_TIMEOUT_SEC)
         self.assertGreater(HOOK_TIMEOUT_SEC, 300)
         self.assertIn("vigil gate", handler["command"])
+        self.assertNotIn("PostToolUse", doc["hooks"])
 
     def test_install_and_uninstall_grok_file(self) -> None:
         with TemporaryDirectory() as tmp:
@@ -30,6 +39,7 @@ class InstallTests(unittest.TestCase):
             self.assertIn("PreToolUse", body["hooks"])
             uninstall(home, helper)
             self.assertFalse(path.exists())
+            self.assertFalse(stable_helper_path(home).exists())
             self.assertFalse((home / ".config" / "opencode" / "plugins" / "vigil.js").exists())
             self.assertFalse((home / ".codex" / "hooks.json").exists())
             from vigil.policy import load_policy
@@ -46,14 +56,22 @@ class InstallTests(unittest.TestCase):
             opath = Path(written["opencode"])
             xpath = Path(written["codex"])
             self.assertTrue(opath.is_file())
-            self.assertIn(helper, opath.read_text(encoding="utf-8"))
+            stable = str(stable_helper_path(home))
             plugin = opath.read_text(encoding="utf-8")
+            self.assertIn(stable, plugin)
             self.assertIn("tool.execute.before", plugin)
             self.assertIn("isPost", plugin)
             self.assertIn(str(HOOK_TIMEOUT_SEC * 1000), plugin)
             self.assertNotIn("__VIGIL_HOOK_TIMEOUT_MS__", plugin)
+            grok = json.loads((home / ".grok" / "hooks" / "vigil.json").read_text())
+            self.assertNotIn("PostToolUse", grok["hooks"])
+            self.assertEqual(
+                grok["hooks"]["PreToolUse"][0]["hooks"][0]["command"],
+                f"{stable} gate",
+            )
             body = json.loads(xpath.read_text(encoding="utf-8"))
             self.assertIn("PreToolUse", body["hooks"])
+            self.assertIn("PostToolUse", body["hooks"])
             self.assertIn("vigil gate", json.dumps(body))
             self.assertEqual(body["hooks"]["PreToolUse"][0]["hooks"][0]["timeout"], HOOK_TIMEOUT_SEC)
             flags = hooks_installed(home, helper)
@@ -77,25 +95,59 @@ class InstallTests(unittest.TestCase):
             home = Path(tmp)
             old = "/plugins/xyz.brwsk.vigil/bin/vigil"
             new = "/plugins/brwsk.vigil/bin/vigil"
-            install(home, old)
+            install(home, new)
+            grok_path = home / ".grok" / "hooks" / "vigil.json"
+            doc = json.loads(grok_path.read_text(encoding="utf-8"))
+            doc["hooks"]["PreToolUse"][0]["hooks"][0]["command"] = f"{old} gate"
+            grok_path.write_text(json.dumps(doc), encoding="utf-8")
+            opath = home / ".config" / "opencode" / "plugins" / "vigil.js"
+            opath.write_text(opath.read_text(encoding="utf-8").replace(str(stable_helper_path(home)), old))
+            xpath = home / ".codex" / "hooks.json"
+            xdoc = json.loads(xpath.read_text(encoding="utf-8"))
+            xdoc["hooks"]["PreToolUse"][0]["hooks"][0]["command"] = f"{old} gate"
+            xpath.write_text(json.dumps(xdoc), encoding="utf-8")
             stale = hooks_installed(home, new)
             self.assertFalse(stale["grok"])
             self.assertFalse(stale["opencode"])
             self.assertFalse(stale["codex"])
-            live = hooks_installed(home, old)
-            self.assertTrue(live["grok"])
-            self.assertTrue(live["opencode"])
-            self.assertTrue(live["codex"])
             install(home, new)
             rewritten = hooks_installed(home, new)
             self.assertTrue(rewritten["grok"])
             self.assertTrue(rewritten["opencode"])
             self.assertTrue(rewritten["codex"])
-            grok = json.loads((home / ".grok" / "hooks" / "vigil.json").read_text())
+            grok = json.loads(grok_path.read_text(encoding="utf-8"))
+            stable = str(stable_helper_path(home))
             self.assertEqual(
                 grok["hooks"]["PreToolUse"][0]["hooks"][0]["command"],
-                f"{new} gate",
+                f"{stable} gate",
             )
+            self.assertNotIn("PostToolUse", grok["hooks"])
+
+    def test_missing_helper_file_counts_as_missing(self) -> None:
+        with TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            helper = "/x/bin/vigil"
+            install(home, helper)
+            self.assertTrue(hooks_installed(home, helper)["grok"])
+            stable_helper_path(home).unlink()
+            self.assertFalse(hooks_installed(home, helper)["grok"])
+
+    def test_claude_merge_drops_vigil_post(self) -> None:
+        settings = {
+            "hooks": {
+                "PostToolUse": [
+                    {
+                        "hooks": [
+                            {"type": "command", "command": "/x/bin/vigil gate", "timeout": 5}
+                        ]
+                    }
+                ]
+            }
+        }
+        merged = merge_claude_hooks(settings, "/x/bin/vigil")
+        self.assertNotIn("PostToolUse", merged.get("hooks", {}))
+        keep = merge_codex_hooks(settings, "/x/bin/vigil")
+        self.assertIn("PostToolUse", keep["hooks"])
 
     def test_claude_merge_keeps_other_hooks(self) -> None:
         settings = {

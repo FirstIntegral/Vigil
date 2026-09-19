@@ -212,3 +212,18 @@
 - Repo is public. User filed https://github.com/omacom/omarchy-plugin-marketplace/issues/7376 themselves. First title `Vigil` failed validation; `[Plugin]: Vigil` passed at `e6c360d`. Baseline `review-required` with empty findings: `privilege` (the word `sudo` in README and `agents.py`), `installer` (`vigil/install.py` hook arm), `service-management` (`systemctl` deny-regex in `risk.py`). Bot: no change required. Maintainer must stamp `approved-and-verified`.
 - **Decision:** wait. Do not patch README or classifier strings to clear those capabilities. They describe real product (hooks install, seatbelt lets `sudo` through, deadly regexes catch reboot). Agent does not open a marketplace issue unless the user says **file it**. Do not open a duplicate. Optional body poke only if stale `needs-fixes` blocks the queue.
 - **Rejected:** rewriting docs to hide `sudo`; dropping install.py; treating `review-required` as a code bug; agent-filed issue; a second submission.
+
+## 2026-09-18 Marketplace approval binds GitHub HEAD; do not push while waiting
+- Maintainer (HANCORE-linux on #7376): validated SHA was `e6c360d`, default-branch HEAD was `993544f` (checkpoint that only touched `AGENTS.md` + `docs/DECISIONS.md`). Approval cannot cover code outside the immutable validated revision.
+- **Decision:** edit the existing issue (not a second filing) so the bots re-scan current HEAD. After a scan, freeze product pushes until `approved-and-verified` or another maintainer-requested re-scan. Local session files stay gitignored. Do not rewrite copy/classifier to dodge capabilities.
+- **Rejected:** opening a duplicate `[Plugin]` issue; `plugin-update` `[Verify]` form (that path is for an already-listed snapshot); resetting `main` to `e6c360d`.
+
+## 2026-09-19 Root AGENTS.md is not part of the installed plugin tree
+- Maintainer (HANCORE-linux on #7376, comment 5735869558): marketplace clones the repo into the plugin dir; root `AGENTS.md` is auto-loaded as trusted agent instructions (marketplace workflow, hook paths). Instruction-injection, unrelated to runtime. Remove or rename; `docs/` is fine.
+- **Decision:** `git rm --cached` root `AGENTS.md`, gitignore it, keep the file locally for continue_project. No `docs/AGENTS.md` (some tools still walk that name). README + `docs/DECISIONS.md` stay the public conventions. Version stays **0.6.7**. This is the maintainer-requested corrected commit; freeze lifts for this push only.
+- **Rejected:** renaming to `docs/AGENTS.md`; rewriting README to dodge `privilege` / `installer` / `service-management`; a second marketplace issue.
+
+## 2026-09-18 Bar id leftover after plugin rename hides the whole plugin
+- Glass: no Vigil on the top bar, no polkit card, hooks still denied after 5 min. `~/.config/omarchy/shell.json` `bar.layout.right` still said `xyz.brwsk.vigil`. Live plugin id is `brwsk.vigil`. Omarchy `isEnabled` is exact-id in bar layout or `plugins[]`. Dead id → plugin not loaded (service + overlay + widget). Gate still ran from hook files, overlay IPC had no listener.
+- **Decision:** this machine's bar entry is `brwsk.vigil`. That is user config, not a Vigil source change. Do not `omarchy restart shell` from an agent (`omarchy-restart` is deadly). Hot-reload of `shell.json` is enough; human restarts the shell if the eye still missing.
+- **Rejected:** agent `omarchy plugin enable`; git-pull of the live plugin tree; pushing a product migrate that would move HEAD again while #7376 is pending.

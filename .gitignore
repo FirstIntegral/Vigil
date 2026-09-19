@@ -2,6 +2,9 @@
 session_compact.md
 session_transcript.md
 claude_memory_import.md
+# Root agent-instruction file stays on this machine; marketplace clone
+# must not install it (instruction-injection into the plugin tree).
+AGENTS.md
 
 # Legacy session paths (retired 2026-07; keep ignored if present)
 docs/SESSION.md

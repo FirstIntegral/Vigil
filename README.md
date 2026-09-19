@@ -46,7 +46,7 @@ Pressing **A** no longer saves the whole command string. It mints a **ticket**: 
 
 **Panic.** One key freezes every future tool call and sends SIGTERM to every classified agent.
 
-**Black box.** A local, hash-chained JSONL log. Secrets are redacted. Nothing is uploaded.
+**Black box.** A local, hash-chained JSONL log. Secrets are redacted, including split flags and Authorization headers. Nothing is uploaded.
 
 **House law.** Five short articles, quoted on the card, also installed as a skill the agent can read. They are reminders, not a second policy engine.
 
@@ -246,7 +246,7 @@ These are not missing features. They are the product.
 
 **No language model in the yes-path.** Classification is regex. Letting a model grant models is how you get captured.
 
-**Local constitution.** Tickets and the black box live under `~/.config/vigil` and `~/.local/state/vigil`, mode `0700` / `0600`, hash-chained, secrets redacted.
+**Local constitution.** Tickets and the black box live under `~/.config/vigil` and `~/.local/state/vigil`, mode `0700` / `0600`, hash-chained. Secrets in command text are redacted before they hit the log, the pending card, last-denied, or a toast.
 
 **Agents cannot mint their own tickets.** `vigil decide` from an agent pid is refused. The overlay’s IPC has `open` and `close` only — no `allow()` verb a script could call.
 

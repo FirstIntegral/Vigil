@@ -108,7 +108,9 @@ class RewindTests(unittest.TestCase):
 
 class PrivacyTests(unittest.TestCase):
     def test_redact_token_and_pem(self) -> None:
-        self.assertIn("<redacted>", redact("Authorization: Bearer supersecretvalue"))
+        out = redact("Authorization: Bearer supersecretvalue")
+        self.assertIn("<redacted>", out)
+        self.assertNotIn("supersecretvalue", out)
         self.assertIn("<redacted-pem>", redact("-----BEGIN PRIVATE KEY-----\nABC\n-----END PRIVATE KEY-----"))
         self.assertEqual(redact_path("/home/brwsk/.ssh/id_ed25519"), "<secret>/id_ed25519")
 

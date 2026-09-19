@@ -20,10 +20,9 @@ def append(home: Path, record: dict[str, Any]) -> None:
     ensure_private_dir(path.parent)
     row = dict(record)
     row.setdefault("at", _now())
-    if "summary" in row and isinstance(row["summary"], str):
-        row["summary"] = redact(row["summary"])
-    if "command" in row and isinstance(row["command"], str):
-        row["command"] = redact(row["command"])
+    for key in ("summary", "command", "reason", "blast"):
+        if key in row and isinstance(row[key], str):
+            row[key] = redact(row[key])
     if "path" in row and isinstance(row["path"], str):
         row["path"] = redact_path(row["path"])
     row = chain_row(row, last_hash(path))

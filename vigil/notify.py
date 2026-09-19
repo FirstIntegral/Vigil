@@ -15,6 +15,8 @@ import shutil
 import subprocess
 import sys
 
+from vigil.secure import redact
+
 ALERTS = ("bar", "toast", "both")
 DEFAULT_ALERT = "both"
 GLYPH_EYE = "󰈈"
@@ -79,7 +81,7 @@ def notify(
     """Send a toast only when toasts are enabled. Returns whether it sent."""
     if not wants_toast(alert):
         return False
-    cmd = toast_command(title, body, urgency=urgency, expire_ms=expire_ms)
+    cmd = toast_command(redact(title), redact(body), urgency=urgency, expire_ms=expire_ms)
     if not cmd:
         return False
     try:

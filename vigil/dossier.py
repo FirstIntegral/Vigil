@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from vigil.paths import audit_path, state_dir
-from vigil.secure import write_private
+from vigil.secure import redact, redact_path, write_private
 
 
 def last_denied_path(home: Path) -> Path:
@@ -20,8 +20,17 @@ def _today() -> str:
 
 
 def write_last_denied(home: Path, record: dict[str, Any]) -> None:
+    row = dict(record)
+    if isinstance(row.get("summary"), str):
+        row["summary"] = redact(row["summary"])
+    if isinstance(row.get("command"), str):
+        row["command"] = redact(row["command"])
+    if isinstance(row.get("reason"), str):
+        row["reason"] = redact(row["reason"])
+    if isinstance(row.get("path"), str):
+        row["path"] = redact_path(row["path"])
     path = last_denied_path(home)
-    write_private(path, json.dumps(record, indent=2) + "\n")
+    write_private(path, json.dumps(row, indent=2) + "\n")
 
 
 def read_last_denied(home: Path) -> dict[str, Any] | None:

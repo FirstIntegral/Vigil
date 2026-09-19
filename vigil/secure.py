@@ -14,13 +14,37 @@ import secrets
 from pathlib import Path
 from typing import Any
 
-_TOKEN = re.compile(
-    r"(?i)\b(api[_-]?key|authorization|bearer|secret|password|passwd|token)\s*[:=]\s*\S+"
+_PLACEHOLDER = "<redacted>"
+_PEM_PLACEHOLDER = "<redacted-pem>"
+
+# Names the old regex already treated as credentials, plus env-style
+# prefixes (GITHUB_TOKEN, AWS_SECRET_ACCESS_KEY).
+_NAME = r"api[_-]?key|authorization|bearer|secret|password|passwd|token"
+_QUOTED = r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\""
+_ATOM = rf"(?:{_QUOTED}|[^\s]+)"
+_KEYWORD = re.compile(rf"(?i)\b(?:{_NAME})\b")
+_SECRET_PARTS = frozenset(
+    {
+        "authorization",
+        "bearer",
+        "secret",
+        "password",
+        "passwd",
+        "token",
+        "apikey",
+    }
 )
+
 _PEM = re.compile(
     r"-----BEGIN [A-Z0-9 ]+-----.*?-----END [A-Z0-9 ]+-----",
     re.DOTALL,
 )
+_QUOTED_RE = re.compile(rf"({_QUOTED})")
+_HEADER_FLAG = re.compile(rf"(?i)(-H|--header)(\s+|=)({_ATOM}(?:\s+Bearer\s+{_ATOM})?)")
+_SECRET_FLAG = re.compile(rf"(?i)(--(?:{_NAME}))(\s+|=)({_ATOM})")
+_AUTH = re.compile(rf"(?i)\b(authorization)(\s*[:=]\s*)(?:(Bearer)\s+)?({_ATOM})")
+_ASSIGN = re.compile(rf"(?i)\b([A-Za-z_][A-Za-z0-9_-]*)(\s*[:=]\s*)({_ATOM})")
+_BEARER = re.compile(rf"(?i)\b(Bearer)(\s+)({_ATOM})")
 
 
 def ensure_private_dir(path: Path) -> Path:
@@ -60,11 +84,94 @@ def write_private(path: Path, text: str) -> None:
         pass
 
 
+def _key_is_secret(key: str) -> bool:
+    parts = [p for p in re.split(r"[-_]", key.lower()) if p]
+    if "api" in parts and "key" in parts:
+        return True
+    return any(p in _SECRET_PARTS for p in parts)
+
+
+def _has_secret_keyword(text: str) -> bool:
+    return bool(_KEYWORD.search(text))
+
+
+def _flag_repl(match: re.Match[str]) -> str:
+    return f"{match.group(1)}{match.group(2)}{_PLACEHOLDER}"
+
+
+def _auth_repl(match: re.Match[str]) -> str:
+    name, sep, bearer = match.group(1), match.group(2), match.group(3)
+    if bearer:
+        return f"{name}{sep}{bearer} {_PLACEHOLDER}"
+    return f"{name}{sep}{_PLACEHOLDER}"
+
+
+def _assign_repl(match: re.Match[str]) -> str:
+    key = match.group(1)
+    # Authorization: Bearer TOKEN is consumed by _AUTH. Re-matching the
+    # first word would drop Bearer and leave the token behind.
+    if key.lower() == "authorization":
+        return match.group(0)
+    if not _key_is_secret(key):
+        return match.group(0)
+    return f"{key}{match.group(2)}{_PLACEHOLDER}"
+
+
+def _bearer_repl(match: re.Match[str]) -> str:
+    value = match.group(3)
+    if value == _PLACEHOLDER:
+        return match.group(0)
+    return f"{match.group(1)}{match.group(2)}{_PLACEHOLDER}"
+
+
+def _redact_unquoted(text: str) -> str:
+    def header_repl(match: re.Match[str]) -> str:
+        opt, sep, raw = match.group(1), match.group(2), match.group(3)
+        quote = ""
+        inner = raw
+        if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "'\"":
+            quote = raw[0]
+            inner = raw[1:-1]
+        if not _has_secret_keyword(inner):
+            return match.group(0)
+        scrubbed = _redact_unquoted_body(inner)
+        if quote:
+            return f"{opt}{sep}{quote}{scrubbed}{quote}"
+        return f"{opt}{sep}{scrubbed}"
+
+    out = _HEADER_FLAG.sub(header_repl, text)
+    return _redact_unquoted_body(out)
+
+
+def _redact_unquoted_body(text: str) -> str:
+    out = _SECRET_FLAG.sub(_flag_repl, text)
+    out = _AUTH.sub(_auth_repl, out)
+    out = _ASSIGN.sub(_assign_repl, out)
+    return _BEARER.sub(_bearer_repl, out)
+
+
+def _redact_quoted(text: str) -> str:
+    def repl(match: re.Match[str]) -> str:
+        blob = match.group(1)
+        inner = blob[1:-1]
+        if not _has_secret_keyword(inner):
+            return blob
+        return blob[0] + _redact_unquoted_body(inner) + blob[0]
+
+    return _QUOTED_RE.sub(repl, text)
+
+
 def redact(text: str) -> str:
+    """Strip credentials from command text before it is stored or shown.
+
+    Handles `password=…`, `--token SECRET`, quoted and unquoted
+    `Authorization` / `Bearer` headers, env-style keys, and PEM blocks.
+    """
     if not text:
         return ""
-    out = _PEM.sub("<redacted-pem>", text)
-    return _TOKEN.sub(lambda m: m.group(1) + "=<redacted>", out)
+    out = _PEM.sub(_PEM_PLACEHOLDER, text)
+    out = _redact_quoted(out)
+    return _redact_unquoted(out)
 
 
 def redact_path(path: str) -> str:

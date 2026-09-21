@@ -46,7 +46,7 @@ Pressing **A** no longer saves the whole command string. It mints a **ticket**: 
 
 **Panic.** One key freezes every future tool call and sends SIGTERM to every classified agent.
 
-**Black box.** A local, hash-chained JSONL log. Secrets are redacted, including split flags and Authorization headers. Nothing is uploaded.
+**Black box.** A local, hash-chained JSONL log. Secrets are redacted, including split flags and Authorization headers of any scheme (Basic, Bearer, Digest, Token, unknown). Nothing is uploaded.
 
 **House law.** Five short articles, quoted on the card, also installed as a skill the agent can read. They are reminders, not a second policy engine.
 

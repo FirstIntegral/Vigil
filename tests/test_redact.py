@@ -45,29 +45,114 @@ class RedactFormTests(unittest.TestCase):
     def test_authorization_bearer_unquoted(self) -> None:
         out = self._gone(f"Authorization: Bearer {SECRET}")
         self.assertIn("Authorization:", out)
-        self.assertIn("Bearer", out)
+        self.assertNotIn("Bearer", out)
 
     def test_quoted_single_header(self) -> None:
         out = self._gone(f"curl -H 'Authorization: Bearer {SECRET}' https://api.example.com")
         self.assertIn("curl", out)
         self.assertIn("https://api.example.com", out)
         self.assertIn("Authorization:", out)
+        self.assertNotIn("Bearer", out)
 
     def test_quoted_double_header(self) -> None:
         out = self._gone(f'curl -H "Authorization: Bearer {SECRET}" https://api.example.com')
         self.assertIn("curl", out)
         self.assertIn("https://api.example.com", out)
+        self.assertNotIn("Bearer", out)
 
     def test_unquoted_header(self) -> None:
         out = self._gone(f"curl -H Authorization: Bearer {SECRET} https://api.example.com")
         self.assertIn("curl", out)
         self.assertIn("https://api.example.com", out)
+        self.assertNotIn("Bearer", out)
 
     def test_long_header_flag(self) -> None:
         self._gone(f"curl --header 'Authorization: Bearer {SECRET}'")
 
     def test_authorization_without_bearer(self) -> None:
         self._gone(f"curl -H 'Authorization: {SECRET}'")
+
+    def test_authorization_basic_quoted_single(self) -> None:
+        cred = "dXNlcjpwYXNz"
+        out = redact(f"curl -H 'Authorization: Basic {cred}' https://api.example.com")
+        self.assertNotIn(cred, out)
+        self.assertNotIn("Basic", out)
+        self.assertIn("<redacted>", out)
+        self.assertIn("https://api.example.com", out)
+
+    def test_authorization_basic_quoted_double(self) -> None:
+        cred = "dXNlcjpwYXNz"
+        out = redact(f'curl -H "Authorization: Basic {cred}" https://api.example.com')
+        self.assertNotIn(cred, out)
+        self.assertNotIn("Basic", out)
+        self.assertIn("https://api.example.com", out)
+
+    def test_authorization_basic_unquoted(self) -> None:
+        cred = "dXNlcjpwYXNz"
+        out = redact(f"curl -H Authorization: Basic {cred} https://api.example.com")
+        self.assertNotIn(cred, out)
+        self.assertNotIn("Basic", out)
+        self.assertIn("<redacted>", out)
+        self.assertIn("https://api.example.com", out)
+
+    def test_authorization_digest_quoted(self) -> None:
+        user = "Mufasa"
+        nonce = "dcd98b7102dd2f0e8b11d0f600bfb0c093"
+        response = "6629fae49393a05397450978507c4ef1"
+        cmd = (
+            "curl -H 'Authorization: Digest "
+            f'username="{user}", realm="testrealm@host.com", '
+            f'nonce="{nonce}", uri="/dir/index.html", '
+            f'response="{response}"\' https://api.example.com'
+        )
+        out = redact(cmd)
+        self.assertNotIn(user, out)
+        self.assertNotIn(nonce, out)
+        self.assertNotIn(response, out)
+        self.assertNotIn("Digest", out)
+        self.assertIn("<redacted>", out)
+        self.assertIn("https://api.example.com", out)
+
+    def test_authorization_digest_unquoted(self) -> None:
+        user = "Mufasa"
+        nonce = "dcd98b7102dd2f0e8b11d0f600bfb0c093"
+        cmd = (
+            f'curl -H Authorization: Digest username="{user}", '
+            f'nonce="{nonce}" https://api.example.com'
+        )
+        out = redact(cmd)
+        self.assertNotIn(user, out)
+        self.assertNotIn(nonce, out)
+        self.assertIn("<redacted>", out)
+        self.assertIn("https://api.example.com", out)
+
+    def test_authorization_token_quoted(self) -> None:
+        cred = "tok_live_abc123secret"
+        out = redact(f"curl -H 'Authorization: Token {cred}' https://api.example.com")
+        self.assertNotIn(cred, out)
+        self.assertNotIn("Token", out)
+        self.assertIn("https://api.example.com", out)
+
+    def test_authorization_token_unquoted(self) -> None:
+        cred = "tok_live_abc123secret"
+        out = redact(f"curl -H Authorization: Token {cred} https://api.example.com")
+        self.assertNotIn(cred, out)
+        self.assertNotIn("Token", out)
+        self.assertIn("https://api.example.com", out)
+
+    def test_authorization_unknown_scheme_quoted(self) -> None:
+        cred = "s3cretfragment.xyz"
+        out = redact(f"curl -H 'Authorization: HOBA {cred}' https://api.example.com")
+        self.assertNotIn(cred, out)
+        self.assertNotIn("HOBA", out)
+        self.assertIn("https://api.example.com", out)
+
+    def test_authorization_unknown_scheme_unquoted(self) -> None:
+        cred = "s3cretfragment.xyz"
+        out = redact(f"curl -H Authorization: HOBA {cred} https://api.example.com")
+        self.assertNotIn(cred, out)
+        self.assertNotIn("HOBA", out)
+        self.assertIn("https://api.example.com", out)
 
     def test_password_flag_separated(self) -> None:
         out = self._gone(f"cmd --password {SECRET}")

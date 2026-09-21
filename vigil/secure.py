@@ -40,9 +40,17 @@ _PEM = re.compile(
     re.DOTALL,
 )
 _QUOTED_RE = re.compile(rf"({_QUOTED})")
-_HEADER_FLAG = re.compile(rf"(?i)(-H|--header)(\s+|=)({_ATOM}(?:\s+Bearer\s+{_ATOM})?)")
+# One argv after -H/--header. Do not special-case Bearer here: a
+# scheme-plus-one-atom grab leaves Digest params (and non-Bearer
+# schemes) on the command. _AUTH consumes the full header value.
+_HEADER_FLAG = re.compile(rf"(?i)(-H|--header)(\s+|=)({_ATOM})")
 _SECRET_FLAG = re.compile(rf"(?i)(--(?:{_NAME}))(\s+|=)({_ATOM})")
-_AUTH = re.compile(rf"(?i)\b(authorization)(\s*[:=]\s*)(?:(Bearer)\s+)?({_ATOM})")
+# Complete Authorization value, any scheme (Basic, Bearer, Digest,
+# Token, unknown). Stop before the next CLI flag or a URL argv.
+_AUTH_END = r"(?=\s+(?:-+[A-Za-z]|https?://)|$)"
+_AUTH = re.compile(
+    rf"(?i)\b(authorization)(\s*[:=]\s*)({_QUOTED}|.+?){_AUTH_END}"
+)
 _ASSIGN = re.compile(rf"(?i)\b([A-Za-z_][A-Za-z0-9_-]*)(\s*[:=]\s*)({_ATOM})")
 _BEARER = re.compile(rf"(?i)\b(Bearer)(\s+)({_ATOM})")
 
@@ -100,16 +108,13 @@ def _flag_repl(match: re.Match[str]) -> str:
 
 
 def _auth_repl(match: re.Match[str]) -> str:
-    name, sep, bearer = match.group(1), match.group(2), match.group(3)
-    if bearer:
-        return f"{name}{sep}{bearer} {_PLACEHOLDER}"
-    return f"{name}{sep}{_PLACEHOLDER}"
+    return f"{match.group(1)}{match.group(2)}{_PLACEHOLDER}"
 
 
 def _assign_repl(match: re.Match[str]) -> str:
     key = match.group(1)
-    # Authorization: Bearer TOKEN is consumed by _AUTH. Re-matching the
-    # first word would drop Bearer and leave the token behind.
+    # Authorization values are consumed whole by _AUTH, any scheme.
+    # Re-matching the first word would leave the credential behind.
     if key.lower() == "authorization":
         return match.group(0)
     if not _key_is_secret(key):
@@ -165,7 +170,8 @@ def redact(text: str) -> str:
     """Strip credentials from command text before it is stored or shown.
 
     Handles `password=…`, `--token SECRET`, quoted and unquoted
-    `Authorization` / `Bearer` headers, env-style keys, and PEM blocks.
+    `Authorization` headers of any scheme, `Bearer` tokens, env-style
+    keys, and PEM blocks.
     """
     if not text:
         return ""

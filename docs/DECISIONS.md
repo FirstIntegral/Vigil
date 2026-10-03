@@ -1,5 +1,10 @@
 # Decisions & Rationale (ADRs)
 
+## 2026-10-04 Panel must tolerate a null lastDenied
+- Live plugin was 0.6.8 in `~/.config/omarchy/plugins/xyz.brwsk.vigil` (manifest id already `brwsk.vigil`). GitHub `main` was `1344ebc` (0.6.9). The shell logged `Panel.qml:413 Cannot read property 'summary' of null` about twice a second for the whole boot. `visible` does not stop the `text` binding, and `&&` yields null, which QML will not store in a bool.
+- `text` now reads `lastDenied` only after a local null check. The same guard is on the ticket line and the today line. `visible` is forced to bool with `!!`. Version **0.6.10**.
+- Rejected: hiding the row with `visible: false` only (the text binding still runs). Rejected: leaving the folder name `xyz.brwsk.vigil` (Omarchy update looks up `plugins/<id>`, and the bar id is `brwsk.vigil`).
+
 ## 2026-09-01 Product is Vigil, not another usage meter
 - Omarchy Quattro (~1000 community plugins, Quickshell `omarchy-shell`, kinds: bar-widget / panel / overlay / menu / service / bar) already ships `omarchy.agents` for subscription usage and rate limits. Community clones (claudebar, ai-usagebar) do the same. The gap that can actually be worth money is **operations + consent**: which agents are alive, what they sit on, a kill switch, later a Little-Snitch-style allow/deny overlay for tool calls.
 - Rejected: another clock/theme/dock; a Time Machine wrapper (Timeshift/snapper exist); a plugin sandbox (third-party plugins share the shell process, cannot confine each other); an `Oma*` name (overused, sounds like a weekend widget).

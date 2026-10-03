@@ -378,10 +378,13 @@ Panel {
         }
 
         Text {
-          visible: root.dossier && root.dossier.counts
+          // visible is evaluated even when false, and `&&` returns null/undefined
+          // rather than a bool. Both of those spam the shell log every refresh.
+          visible: !!(root.dossier && root.dossier.counts)
           text: {
-            var c = root.dossier.counts || {}
-            var files = (root.dossier.files || []).length
+            var d = root.dossier || {}
+            var c = d.counts || {}
+            var files = (d.files || []).length
             return "today: " + (c.tools || 0) + " tool calls, " + (c.deny || 0) + " denied, " + (c.allow || 0) + " allowed, " + files + " files"
           }
           color: root.contentForeground
@@ -393,10 +396,11 @@ Panel {
         }
 
         Text {
-          visible: root.service && root.service.tickets && (root.service.tickets.allow || []).length > 0
+          visible: !!(root.service && root.service.tickets && root.service.tickets.allow && root.service.tickets.allow.length > 0)
           text: {
-            var n = (root.service.tickets.allow || []).length
-            var first = (root.service.tickets.allow || [])[0] || ""
+            var allow = (root.service && root.service.tickets && root.service.tickets.allow) || []
+            var n = allow.length
+            var first = allow[0] || ""
             return n + (n === 1 ? " ticket" : " tickets") + " · v revokes " + first
           }
           color: root.contentForeground
@@ -409,8 +413,11 @@ Panel {
         }
 
         Text {
-          visible: root.dossier && root.dossier.lastDenied && root.dossier.lastDenied.summary
-          text: "last denied: " + String(root.dossier.lastDenied.summary || "")
+          visible: !!(root.dossier && root.dossier.lastDenied && root.dossier.lastDenied.summary)
+          text: {
+            var denied = root.dossier && root.dossier.lastDenied
+            return "last denied: " + String((denied && denied.summary) || "")
+          }
           color: root.contentForeground
           opacity: 0.45
           font.family: root.contentFontFamily

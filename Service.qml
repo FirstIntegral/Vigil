@@ -43,6 +43,14 @@ Item {
   property bool trustUntilLock: false
   property bool autoArm: true
   property bool autoInstallAttempted: false
+  property string updateState: ""
+  property int updateBehind: 0
+  property bool updateDirty: false
+  property bool updateBusy: false
+  property string updateNote: ""
+  property double updateCheckedAt: 0
+  // GitHub check is slow and rare. The 2s snapshot must not fetch.
+  readonly property int updateCheckIntervalMs: 3 * 60 * 60 * 1000
   property string _stdout: ""
   property string _stderr: ""
   property string lastError: ""
@@ -286,6 +294,45 @@ Item {
     actionProc.running = true
   }
 
+  function checkUpdates(force) {
+    if (updateProc.running) return
+    var now = Date.now()
+    if (!force && root.updateCheckedAt > 0 && (now - root.updateCheckedAt) < 15 * 60 * 1000)
+      return
+    updateProc.command = [helperPath(), "update-check"]
+    updateProc.running = true
+  }
+
+  function applyUpdate() {
+    if (updateApplyProc.running) return
+    if (root.updateState !== "behind" || root.updateDirty) return
+    root.updateBusy = true
+    root.updateNote = ""
+    updateApplyProc.command = [helperPath(), "update-apply"]
+    updateApplyProc.running = true
+  }
+
+  function takeUpdateReport(raw, keepBehindOnOffline) {
+    var payload = null
+    try { payload = JSON.parse(String(raw || "")) } catch (error) { payload = null }
+    root.updateCheckedAt = Date.now()
+    if (!payload) {
+      if (!(keepBehindOnOffline && root.updateState === "behind"))
+        root.updateState = "offline"
+      return
+    }
+    var state = String(payload.state || "")
+    if (state === "offline" && keepBehindOnOffline && root.updateState === "behind")
+      return
+    root.updateState = state
+    root.updateBehind = Number(payload.behind) || 0
+    root.updateDirty = payload.dirty === true
+    if (payload.ok === false && payload.error)
+      root.updateNote = String(payload.error)
+    else
+      root.updateNote = ""
+  }
+
   visible: false
 
   Timer {
@@ -294,6 +341,14 @@ Item {
     running: true
     triggeredOnStart: true
     onTriggered: root.refresh()
+  }
+
+  Timer {
+    interval: root.updateCheckIntervalMs
+    repeat: true
+    running: true
+    triggeredOnStart: true
+    onTriggered: root.checkUpdates(true)
   }
 
   Timer {
@@ -393,6 +448,39 @@ Item {
     }
     stderr: StdioCollector {
       id: actionErr
+      waitForEnd: true
+    }
+  }
+
+  Process {
+    id: updateProc
+    running: false
+    command: []
+    onExited: function(exitCode) {
+      root.takeUpdateReport(String(updateOut.text || ""), true)
+    }
+    stdout: StdioCollector {
+      id: updateOut
+      waitForEnd: true
+    }
+  }
+
+  Process {
+    id: updateApplyProc
+    running: false
+    command: []
+    onExited: function(exitCode) {
+      root.updateBusy = false
+      root.takeUpdateReport(String(updateApplyOut.text || ""), false)
+      if (exitCode === 0)
+        root.updateNote = ""
+    }
+    stdout: StdioCollector {
+      id: updateApplyOut
+      waitForEnd: true
+    }
+    stderr: StdioCollector {
+      id: updateApplyErr
       waitForEnd: true
     }
   }

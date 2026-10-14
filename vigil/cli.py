@@ -21,6 +21,7 @@ from vigil.pending import ACTIONS, cleanup, list_pending, request_path, write_de
 from vigil.principal import caller_is_agent
 from vigil.notify import ALERTS
 from vigil.policy import MODES, load_policy, save_policy
+from vigil.repo_update import apply_update, inspect as inspect_repo
 from vigil.rewind import rewind
 from vigil.snapshot import collect, default_state_path, dumps, write_snapshot
 from vigil.prove import dumps as dumps_prove
@@ -137,6 +138,26 @@ def cmd_prove(args: argparse.Namespace) -> int:
 def cmd_version(_: argparse.Namespace) -> int:
     sys.stdout.write(f"{PLUGIN_ID} {__version__}\n")
     return 0
+
+
+def _repo_root(args: argparse.Namespace) -> Path:
+    raw = getattr(args, "root", None)
+    return Path(raw) if raw else _plugin_root()
+
+
+def cmd_update_check(args: argparse.Namespace) -> int:
+    report = inspect_repo(_repo_root(args))
+    sys.stdout.write(json.dumps(report) + "\n")
+    return 0 if report.get("ok") else 1
+
+
+def cmd_update_apply(args: argparse.Namespace) -> int:
+    refused = _refuse_agent()
+    if refused is not None:
+        return refused
+    report = apply_update(_plugin_root())
+    sys.stdout.write(json.dumps(report) + "\n")
+    return 0 if report.get("ok") else 1
 
 
 def cmd_gate(args: argparse.Namespace) -> int:
@@ -605,6 +626,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     ver = sub.add_parser("version")
     ver.set_defaults(func=cmd_version)
+
+    check = sub.add_parser("update-check", help="Fetch origin HEAD. JSON, no merge.")
+    check.add_argument("--root", default=None, help="Checkout to inspect (tests).")
+    check.set_defaults(func=cmd_update_check)
+
+    apply = sub.add_parser("update-apply", help="Fast-forward this plugin. Human only.")
+    apply.set_defaults(func=cmd_update_apply)
 
     prove = sub.add_parser(
         "prove",

@@ -94,6 +94,8 @@ omarchy plugin add git@github.com:FirstIntegral/Vigil.git --enable
 
 Enable the plugin. The bar starts watching on its own. You do not press `h` for a normal install.
 
+The running plugin checks GitHub when the shell starts, again every three hours, and when you open the panel. If `origin` `HEAD` is a fast-forward ahead of `~/.config/omarchy/plugins/brwsk.vigil`, the panel says how many commits and shows an Update button. That click runs the same fast-forward as `omarchy plugin update brwsk.vigil`. Local edits, or a history that is not a fast-forward, leave the button off and say why. An agent cannot run `vigil update-apply`. The check does not merge anything by itself.
+
 Restart the agent session so it loads the hook. Left-click the eye in the bar.
 
 If you ran `vigil uninstall` on purpose, watching stays off until you press `h` (or run install from a human terminal).

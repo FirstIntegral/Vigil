@@ -211,7 +211,7 @@ _PLUGIN_MUTATE = re.compile(
 )
 _SELF_APPROVE = re.compile(
     r"\bvigil\s+(decide|mode|unfreeze|freeze|install|uninstall|panic|"
-    r"envelope|trust|lid|rewind|prove|spawn|kill(?:-all)?|alert)\b"
+    r"envelope|trust|lid|rewind|prove|spawn|kill(?:-all)?|alert|update-apply)\b"
     r"|\.local/state/vigil|\.config/vigil|pending/\S+\.decision"
     r"|\.config/omarchy/plugins"
     r"|/\.grok/hooks/"

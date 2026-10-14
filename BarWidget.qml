@@ -107,18 +107,23 @@ BarWidget {
     fixedHeight: root.vertical ? root.verticalLines.length * Style.bar.iconSlot : -1
     horizontalMargin: 8.5
     tooltipText: {
+      var offer = ""
+      if (root.service && root.service.updateState === "behind" && root.service.updateDirty !== true) {
+        var ahead = Number(root.service.updateBehind) || 0
+        offer = "GitHub has " + (ahead === 1 ? "1 new commit. " : (ahead + " new commits. "))
+      }
       if (!root.service || !root.service.ready)
-        return "Vigil · scanning"
+        return offer + "Vigil · scanning"
       if (root.service.incident)
-        return "Vigil · INCIDENT"
+        return offer + "Vigil · INCIDENT"
       if (root.service.frozen)
-        return "Vigil · frozen — every tool call is denied until you unfreeze"
+        return offer + "Vigil · frozen — every tool call is denied until you unfreeze"
       if (root.service.alertLine)
-        return root.service.alertLine
+        return offer + root.service.alertLine
       if (!root.hasAgents)
-        return "Vigil · no coding agents running"
+        return offer + "Vigil · no coding agents running"
       var n = root.service.agentCount
-      return "Vigil · " + n + (n === 1 ? " agent" : " agents")
+      return offer + "Vigil · " + n + (n === 1 ? " agent" : " agents")
     }
     onPressed: function(b) {
       if (b === Qt.RightButton) root.toggleIconOnly()

@@ -43,6 +43,11 @@ Panel {
       root.selectedIndex = Math.max(0, root.sessions.length - 1)
   }
 
+  onOpenedChanged: {
+    if (root.opened && root.service && root.service.checkUpdates)
+      root.service.checkUpdates(false)
+  }
+
   function open() { root.controller.show() }
   function close() { root.controller.hide() }
   function toggle() {
@@ -311,6 +316,80 @@ Panel {
                     renderType: Text.NativeRendering
                     font.pixelSize: Style.font.bodySmall
                   }
+                }
+              }
+            }
+          }
+        }
+
+        Rectangle {
+          visible: !!(root.service && (
+            root.service.updateState === "behind" ||
+            root.service.updateState === "diverged" ||
+            root.service.updateBusy === true
+          ))
+          width: parent.width
+          implicitHeight: updateInner.implicitHeight + Style.space(16)
+          radius: Style.space(6)
+          color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.06)
+          border.color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.16)
+          border.width: 1
+
+          Row {
+            id: updateInner
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: Style.space(8)
+            spacing: Style.space(8)
+
+            Text {
+              width: parent.width - updateButton.width - parent.spacing
+              wrapMode: Text.Wrap
+              text: {
+                var svc = root.service
+                if (!svc) return ""
+                if (svc.updateBusy === true) return "Updating from GitHub..."
+                if (svc.updateState === "diverged")
+                  return "GitHub diverged from this checkout. A fast-forward is not possible."
+                var n = Number(svc.updateBehind) || 0
+                var commits = n === 1 ? "1 new commit" : (n + " new commits")
+                if (svc.updateDirty === true)
+                  return "GitHub has " + commits + ". Local edits block the update."
+                if (svc.updateNote) return String(svc.updateNote)
+                return "GitHub has " + commits + "."
+              }
+              color: root.contentForeground
+              font.family: root.contentFontFamily
+              renderType: Text.NativeRendering
+              font.pixelSize: Style.font.bodySmall
+            }
+
+            Rectangle {
+              id: updateButton
+              visible: !!(root.service && root.service.updateState === "behind" && root.service.updateDirty !== true && root.service.updateBusy !== true)
+              width: visible ? updateButtonLabel.implicitWidth + Style.space(16) : 0
+              height: updateButtonLabel.implicitHeight + Style.space(8)
+              radius: Style.space(4)
+              color: Qt.rgba(root.contentForeground.r, root.contentForeground.g, root.contentForeground.b, 0.14)
+              anchors.verticalCenter: parent.verticalCenter
+
+              Text {
+                id: updateButtonLabel
+                anchors.centerIn: parent
+                text: "Update"
+                color: root.contentForeground
+                font.family: root.contentFontFamily
+                renderType: Text.NativeRendering
+                font.pixelSize: Style.font.bodySmall
+                font.bold: true
+              }
+
+              MouseArea {
+                anchors.fill: parent
+                enabled: updateButton.visible
+                onClicked: {
+                  if (root.service) root.service.applyUpdate()
                 }
               }
             }

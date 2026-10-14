@@ -17,8 +17,8 @@ A short card about this computer may exist at `~/.config/vigil/MACHINE.md`. Read
 ## Do not
 
 - Do not run `vigil decide`. That is how a human answers a card. An agent answering its own card is blocked.
-- Do not run `vigil mode`, `vigil unfreeze`, `vigil install`, `vigil uninstall`, `vigil tickets`, `vigil folder`, or `vigil log`.
+- Do not run `vigil mode`, `vigil unfreeze`, `vigil install`, `vigil uninstall`, `vigil update-apply`, `vigil tickets`, `vigil folder`, or `vigil log`.
 - Do not write under `~/.local/state/vigil/` or `~/.config/vigil/`.
 - Do not write under `~/.config/omarchy/plugins/` or the Grok/Claude hook files.
-- Do not run `omarchy plugin add` / `enable` / `remove` unless the human already allowed that ticket.
+- Do not run `omarchy plugin add` / `enable` / `remove` / `update` unless the human already allowed that ticket. The panel Update button is that human click.
 - Do not treat silence as permission. Silence is deny.

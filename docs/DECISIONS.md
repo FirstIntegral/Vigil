@@ -1,10 +1,5 @@
 # Decisions & Rationale (ADRs)
 
-## 2026-10-04 Panel must tolerate a null lastDenied
-- Live plugin was 0.6.8 in `~/.config/omarchy/plugins/xyz.brwsk.vigil` (manifest id already `brwsk.vigil`). GitHub `main` was `1344ebc` (0.6.9). The shell logged `Panel.qml:413 Cannot read property 'summary' of null` about twice a second for the whole boot. `visible` does not stop the `text` binding, and `&&` yields null, which QML will not store in a bool.
-- `text` now reads `lastDenied` only after a local null check. The same guard is on the ticket line and the today line. `visible` is forced to bool with `!!`. Version **0.6.10**.
-- Rejected: hiding the row with `visible: false` only (the text binding still runs). Rejected: leaving the folder name `xyz.brwsk.vigil` (Omarchy update looks up `plugins/<id>`, and the bar id is `brwsk.vigil`).
-
 ## 2026-09-01 Product is Vigil, not another usage meter
 - Omarchy Quattro (~1000 community plugins, Quickshell `omarchy-shell`, kinds: bar-widget / panel / overlay / menu / service / bar) already ships `omarchy.agents` for subscription usage and rate limits. Community clones (claudebar, ai-usagebar) do the same. The gap that can actually be worth money is **operations + consent**: which agents are alive, what they sit on, a kill switch, later a Little-Snitch-style allow/deny overlay for tool calls.
 - Rejected: another clock/theme/dock; a Time Machine wrapper (Timeshift/snapper exist); a plugin sandbox (third-party plugins share the shell process, cannot confine each other); an `Oma*` name (overused, sounds like a weekend widget).
@@ -218,38 +213,8 @@
 - **Decision:** wait. Do not patch README or classifier strings to clear those capabilities. They describe real product (hooks install, seatbelt lets `sudo` through, deadly regexes catch reboot). Agent does not open a marketplace issue unless the user says **file it**. Do not open a duplicate. Optional body poke only if stale `needs-fixes` blocks the queue.
 - **Rejected:** rewriting docs to hide `sudo`; dropping install.py; treating `review-required` as a code bug; agent-filed issue; a second submission.
 
-## 2026-09-18 Marketplace approval binds GitHub HEAD; do not push while waiting
-- Maintainer (HANCORE-linux on #7376): validated SHA was `e6c360d`, default-branch HEAD was `993544f` (checkpoint that only touched `AGENTS.md` + `docs/DECISIONS.md`). Approval cannot cover code outside the immutable validated revision.
-- **Decision:** edit the existing issue (not a second filing) so the bots re-scan current HEAD. After a scan, freeze product pushes until `approved-and-verified` or another maintainer-requested re-scan. Local session files stay gitignored. Do not rewrite copy/classifier to dodge capabilities.
-- **Rejected:** opening a duplicate `[Plugin]` issue; `plugin-update` `[Verify]` form (that path is for an already-listed snapshot); resetting `main` to `e6c360d`.
-
-## 2026-09-19 Root AGENTS.md is not part of the installed plugin tree
-- Maintainer (HANCORE-linux on #7376, comment 5735869558): marketplace clones the repo into the plugin dir; root `AGENTS.md` is auto-loaded as trusted agent instructions (marketplace workflow, hook paths). Instruction-injection, unrelated to runtime. Remove or rename; `docs/` is fine.
-- **Decision:** `git rm --cached` root `AGENTS.md`, gitignore it, keep the file locally for continue_project. No `docs/AGENTS.md` (some tools still walk that name). README + `docs/DECISIONS.md` stay the public conventions. Version stays **0.6.7**. This is the maintainer-requested corrected commit; freeze lifts for this push only.
-- **Rejected:** renaming to `docs/AGENTS.md`; rewriting README to dodge `privilege` / `installer` / `service-management`; a second marketplace issue.
-
-## 2026-09-18 Bar id leftover after plugin rename hides the whole plugin
-- Glass: no Vigil on the top bar, no polkit card, hooks still denied after 5 min. `~/.config/omarchy/shell.json` `bar.layout.right` still said `xyz.brwsk.vigil`. Live plugin id is `brwsk.vigil`. Omarchy `isEnabled` is exact-id in bar layout or `plugins[]`. Dead id → plugin not loaded (service + overlay + widget). Gate still ran from hook files, overlay IPC had no listener.
-- **Decision:** this machine's bar entry is `brwsk.vigil`. That is user config, not a Vigil source change. Do not `omarchy restart shell` from an agent (`omarchy-restart` is deadly). Hot-reload of `shell.json` is enough; human restarts the shell if the eye still missing.
-- **Rejected:** agent `omarchy plugin enable`; git-pull of the live plugin tree; pushing a product migrate that would move HEAD again while #7376 is pending.
-
-## 2026-09-19 Redact split flags and full Authorization values
-- Maintainer (HANCORE-linux on #7376, comment 5741338293): at `232d1db`, `vigil/secure.py` only redacted `name:=token` and ate one non-space atom. `curl -H 'Authorization: Bearer SECRET'` left `SECRET`. `--password SECRET` / `--token SECRET` missed entirely. That string is persisted by `audit.py` and `pending.py`.
-- **Decision:** `redact()` handles quoted and unquoted `-H`/`--header` Authorization values (including `Bearer` plus the token), split secret flags (`--password SECRET`, `--token=SECRET`), assignment and env-style keys (`password=`, `GITHUB_TOKEN=`), and PEM. Pending also redacts `reason`/`blast` (classifier copies the command there). Audit redacts `reason`/`blast`. last-denied and toasts go through the same function. Tests cover the forms HANCORE named. Version **0.6.8**. Freeze lifts for this maintainer-requested commit only; do not open a second issue.
-- **Rejected:** omitting the whole command on any credential pattern (card would go blank). Rewriting README/classifier to dodge `privilege` / `installer` / `service-management`.
-
-## 2026-09-21 Authorization redaction is scheme-agnostic
-- Maintainer (HANCORE-linux on #7376, comment 5745980517): at `05b7f7d`, `_AUTH` only treated `Bearer` as a two-part value. `curl -H 'Authorization: Basic dXNlcjpwYXNz'` replaced `Basic` and left the credential. Same leak for Digest / Token / unknown schemes. Persisted via audit / pending / last-denied.
-- **Decision:** `redact()` consumes the complete Authorization value after `:` / `=`, any scheme. Stop before the next CLI flag or a URL argv so the rest of the command stays. `-H` / `--header` no longer special-case a Bearer tail (that grab left Digest params behind). Quoted and unquoted Basic, Digest, Token, and unknown schemes have tests that assert no credential fragment survives. Version **0.6.9**. Freeze lifts for this maintainer-requested commit only; do not open a second issue.
-- **Rejected:** omitting the whole command when an Authorization header is present (card goes blank). Keeping the scheme word visible (`Authorization: Basic <redacted>`) — the value includes the scheme; leftover scheme-specific parsing is how 0.6.8 leaked.
-
-## 2026-10-14 Panel offers a fast-forward when GitHub is ahead
-
-- **Decision:** The installed checkout checks `origin` `HEAD` at shell start, every three hours, and when the panel opens (at most once per 15 minutes). A `behind` result draws a row and an Update button. The click runs `vigil update-apply`, which refuses agent parents and then runs `omarchy plugin update brwsk.vigil --yes` (fetch, fast-forward only, validate, rescan). Dirty tracked files and a diverged history do not offer the button. `vigil update-apply` is `self-approve`, same as `vigil install`. The 2-second snapshot does not fetch. Version **0.6.11**.
-- **Why:** `omarchy plugin update` is manual. The bar should say when GitHub moved and let a human apply that exact fast-forward without a terminal.
-- **Rejected:** Fetching inside the 2-second snapshot. Auto-merging with no click. A button that force-resets a dirty checkout. Letting an agent run `update-apply`.
-
-## 2026-09-22 Marketplace listed Vigil; the wait-freeze is over
-- Issue [#7376](https://github.com/omacom/omarchy-plugin-marketplace/issues/7376) closed 2026-09-21T19:28:52Z. Bot comment 5766265742: published and verified, method `maintainer-reviewed`. Labels include `listed` and `approved-and-verified` (also `validated`, `security-review-required`). Live catalog (`plugins.omarchy.org/catalog.json`, generated 2026-09-21T21:01:02Z) has `brwsk.vigil` 0.6.9, status Available, verification snapshot `27aebc1d5cabc74184c90a49cd275649579e0f76`, reviewed by HANCORE-linux. Page: https://plugins.omarchy.org/plugin.html?id=brwsk.vigil Install line on the card: `omarchy plugin add https://github.com/FirstIntegral/Vigil.git --enable`.
-- **Decision:** the 2026-09-18 “do not push while waiting” freeze is done. That rule was until `approved-and-verified` on the validated SHA, and that stamp is on `27aebc1`. Do not open a second submission issue. Future already-listed snapshot checks stay on the marketplace update path, not a new `[Plugin]` issue. Do not rewrite copy to dodge `privilege` / `installer` / `service-management`.
-- **Rejected:** treating the hidden “Plugin not found” div in `plugin.html` as a failed listing (static empty state; catalog row is the source of truth). Celebrating a different commit than `27aebc1`.
+## 2026-10-19 OpenCode V2 loads a default plugin definition
+- Glass: OpenCode 2.0.32 Plugins dialog showed `~/.config/opencode/plugins/vigil.js` as `failed, local`. Log: `Plugin must export a default definition with an id and an effect or setup function` (`Missing key at ["default"]`).
+- Cause: the harness used the V1 shape (named `VigilSeatbelt` async factory returning a `tool.execute.before/after` map). V2 loads `export default { id, setup }` and registers hooks through `ctx.tool.hook("execute.before", event => …)`.
+- **Decision:** keep both surfaces in `harnesses/opencode-plugin.js`. The default export `{ id: "brwsk.vigil", setup(ctx) }` registers V2 tool hooks with `ctx.location.directory`; named `VigilSeatbelt` keeps the V1 map. Throwing in `execute.before` rejects that one call (`Tool.Error`), `execute.after` stays log-only. Version stays **0.6.11**.
+- **Rejected:** V2-only (older OpenCode loses the seatbelt); `ctx.permission.hook("evaluate")` (event carries action/resources, not the tool input the gate classifies).

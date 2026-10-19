@@ -1,4 +1,6 @@
 // OpenCode global plugin. install() rewrites __VIGIL_HELPER__.
+// V2: default export { id, setup }, hooks registered on ctx.tool.
+// V1: named VigilSeatbelt function export with the legacy hook map.
 // tool.execute.before: spawn vigil gate; throw on deny. Fail closed.
 
 import { spawnSync } from "node:child_process"
@@ -50,23 +52,38 @@ function runGate(eventName, tool, args, sessionId, directory) {
   }
 }
 
-export const VigilSeatbelt = async ({ directory }) => {
+function gateHooks(directory) {
   return {
     "tool.execute.before": async (input, output) => {
       runGate("pre_tool_use", input.tool, output.args, input.sessionID, directory)
     },
     "tool.execute.after": async (input, output) => {
       try {
-        runGate(
-          "post_tool_use",
-          input.tool,
-          output.args || {},
-          input.sessionID,
-          directory,
-        )
+        runGate("post_tool_use", input.tool, output.args || {}, input.sessionID, directory)
       } catch {
         // Post cannot undo. Gate still logs.
       }
     },
   }
 }
+
+// OpenCode V2 plugin API.
+export default {
+  id: "brwsk.vigil",
+  async setup(ctx) {
+    const directory = ctx.location.directory
+    await ctx.tool.hook("execute.before", (event) => {
+      runGate("pre_tool_use", event.tool, event.input, event.sessionID, directory)
+    })
+    await ctx.tool.hook("execute.after", (event) => {
+      try {
+        runGate("post_tool_use", event.tool, event.input, event.sessionID, directory)
+      } catch {
+        // Post cannot undo. Gate still logs.
+      }
+    })
+  },
+}
+
+// OpenCode V1 plugin API.
+export const VigilSeatbelt = async ({ directory }) => gateHooks(directory)

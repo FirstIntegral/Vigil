@@ -42,10 +42,10 @@ def write_call(path: str, cwd: str = "/home/brwsk/Projects/a") -> dict:
     }
 
 
-def subagent_call() -> dict:
+def subagent_call(session: str = "s1") -> dict:
     return {
         "hookEventName": "pre_tool_use",
-        "sessionId": "s1",
+        "sessionId": session,
         "cwd": "/home/brwsk/Projects/Vigil",
         "workspaceRoot": "/home/brwsk/Projects/Vigil",
         "permissionMode": "always-approve",
@@ -110,22 +110,61 @@ class SubagentHoldTests(unittest.TestCase):
         self.assertTrue(risk.hold)
         self.assertEqual(risk.decision, ASK)
 
-    def test_third_child_denied_without_ticket(self) -> None:
+    def test_allow_once_does_not_cover_the_next_spawn(self) -> None:
         with TemporaryDirectory() as tmp:
             home = Path(tmp)
-            policy = Policy(mode="seatbelt", max_subagents=2)
-            save_policy(home, policy)
-            decisions = []
+            save_policy(home, Policy(mode="seatbelt", max_subagents=2))
+            asks = 0
+
+            def wait(*_args: object) -> object:
+                nonlocal asks
+                asks += 1
+                return type("D", (), {"action": "allow"})()
+
+            classes = []
             for _ in range(3):
-                result = gate_payload(
-                    subagent_call(),
-                    home=home,
-                    wait_fn=lambda *_: type("D", (), {"action": "allow"})(),
-                )
-                decisions.append((result.decision, result.risk.class_id if result.risk else ""))
-            self.assertEqual(decisions[0][0], "allow")
-            self.assertEqual(decisions[1][0], "allow")
-            self.assertEqual(decisions[2][1], "subagent-cap")
+                result = gate_payload(subagent_call(), home=home, wait_fn=wait)
+                self.assertEqual(result.decision, "allow")
+                self.assertTrue(result.asked)
+                classes.append(result.risk.class_id if result.risk else "")
+            self.assertEqual(classes, ["subagent", "subagent", "subagent"])
+            self.assertEqual(asks, 3)
+
+    def test_session_ticket_covers_same_parent(self) -> None:
+        with TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            save_policy(home, Policy(mode="seatbelt", max_subagents=2))
+            asks = 0
+
+            def wait(*_args: object) -> object:
+                nonlocal asks
+                asks += 1
+                return type("D", (), {"action": "session"})()
+
+            first = gate_payload(subagent_call(), home=home, wait_fn=wait)
+            self.assertEqual(first.decision, "allow")
+            self.assertTrue(first.asked)
+            second = gate_payload(subagent_call(), home=home, wait_fn=wait)
+            self.assertEqual(second.decision, "allow")
+            self.assertFalse(second.asked)
+            other = gate_payload(subagent_call("s2"), home=home, wait_fn=wait)
+            self.assertTrue(other.asked)
+            self.assertEqual(other.risk.class_id if other.risk else "", "subagent")
+            self.assertEqual(asks, 2)
+
+    def test_always_ticket_sticks_across_sessions(self) -> None:
+        with TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            save_policy(home, Policy(mode="seatbelt", max_subagents=2))
+
+            def wait(*_args: object) -> object:
+                return type("D", (), {"action": "always"})()
+
+            first = gate_payload(subagent_call(), home=home, wait_fn=wait)
+            self.assertTrue(first.asked)
+            second = gate_payload(subagent_call("s2"), home=home, wait_fn=wait)
+            self.assertEqual(second.decision, "allow")
+            self.assertFalse(second.asked)
 
 
 class TrustUntilLockTests(unittest.TestCase):

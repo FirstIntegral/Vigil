@@ -66,14 +66,7 @@ def write_request(
     expires_at: str,
     envelope: str = "",
 ) -> Path:
-    from vigil.ghosts import ghosts_for
-
-    ghosts = ghosts_for(call)
     blast = risk.blast or ""
-    if ghosts and not blast:
-        blast = f"{len(ghosts)} windows"
-    elif ghosts:
-        blast = f"{blast} · {len(ghosts)} windows"
     payload = {
         "id": req_id,
         "kind": "tool",
@@ -97,7 +90,7 @@ def write_request(
         "blast": redact(blast),
         "envelope": envelope,
         "reversible": risk.reversible,
-        "ghosts": ghosts,
+        "ghosts": [],
         "permissionMode": call.permission_mode,
         "severity": severity_for(risk.class_id),
     }

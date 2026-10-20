@@ -6,7 +6,6 @@ import qs.Commons
 import qs.Ui
 
 // Same chrome as omarchy.polkit: scrim, BorderSurface, [polkit] tokens.
-// Ghosts are Hyprland window outlines for the pending call.
 Item {
   id: root
 
@@ -24,7 +23,6 @@ Item {
   }
   readonly property bool deadly: root.current && String(root.current.severity || "") === "critical"
   readonly property string kind: root.current ? String(root.current.kind || "tool") : "tool"
-  readonly property var ghosts: root.current && root.current.ghosts ? root.current.ghosts : []
   readonly property bool awayCard: kind === "away" || kind === "surprise"
 
   property color accent: Color.polkit.accent
@@ -97,24 +95,7 @@ Item {
 
     Rectangle {
       anchors.fill: parent
-      color: root.ghosts.length > 0
-        ? Qt.rgba(root.scrim.r, root.scrim.g, root.scrim.b, 0.42)
-        : root.scrim
-    }
-
-    Repeater {
-      model: root.ghosts
-      Rectangle {
-        required property var modelData
-        x: (modelData.at && modelData.at.length) ? Number(modelData.at[0]) : 0
-        y: (modelData.at && modelData.at.length > 1) ? Number(modelData.at[1]) : 0
-        width: (modelData.size && modelData.size.length) ? Number(modelData.size[0]) : 0
-        height: (modelData.size && modelData.size.length > 1) ? Number(modelData.size[1]) : 0
-        color: "transparent"
-        radius: root.cornerRadius
-        border.width: Math.max(2, Style.space(2))
-        border.color: Color.urgent
-      }
+      color: root.scrim
     }
 
     MouseArea {

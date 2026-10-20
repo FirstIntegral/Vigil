@@ -59,6 +59,7 @@ class Policy:
     trust_until: str = ""
     trust_root: str = ""
     trust_until_lock: bool = False
+    # Old policy.json still has this key. The gate does not enforce a daily cap.
     max_subagents: int = 2
     lid: bool = True
     lid_held: bool = False

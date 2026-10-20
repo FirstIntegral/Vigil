@@ -1,8 +1,7 @@
-"""Subagent child counts. Empty wallet: children do not mint Always tickets.
+"""Subagent child counts. The gate no longer reads this file.
 
-Always tickets are agent×project×class, so a child that shares the parent
-agent still matches them. The hold is on *spawning* the child (seatbelt
-card) plus a per-parent daily cap. Documented limit, not a kernel jail.
+The daily cap is retired. A session ticket or an Always ticket covers later
+spawns. This module remains so an old children.json can still be counted.
 """
 
 from __future__ import annotations

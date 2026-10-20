@@ -16,13 +16,13 @@ You pick a default agent. It runs as usual.
 
 Vigil sits on the agent’s **tool-call hook**. It does not sit on the harness “ask” prompt, because YOLO would auto-allow that and the seatbelt would be fake.
 
-When a call is dangerous, Omarchy paints the same **polkit** card you already know: lock glyph, justification line, `BorderSurface`, native toast. The windows that would actually feel the damage are outlined on the glass (ghosts). If you walk away, the call is denied.
+When a call is dangerous, Omarchy paints the same **polkit** card you already know: lock glyph, justification line, `BorderSurface`, native toast. If you walk away, the call is denied.
 
-Pressing **A** no longer saves the whole command string. It mints a **ticket**: this agent, this project, this *class* of action, until you revoke it. A spawned subagent does not inherit the parent’s session wallet.
+Pressing **A** no longer saves the whole command string. It mints a **ticket**: this agent, this project, this *class* of action, until you revoke it. A spawned subagent does not inherit the parent’s session wallet. The first `spawn_subagent` from a parent waits even in seatbelt. **S** covers later spawns in that session. **A** covers that agent and project until revoked.
 
 ## Capabilities
 
-**Seatbelt (the default).** Everyday work goes through: `git push`, `sudo`, `pytest`, edits inside the project. Only machine-killing calls wait for you.
+**Seatbelt (the default).** Everyday work goes through: `git push`, `sudo`, `pytest`, edits inside the project. Only machine-killing calls wait for you, plus the first helper spawn from a parent.
 
 **Tickets.** “Always allow” remembers a class, not a full command. Examples: git-push, `mcp:github`, write `~/.ssh`. That way a slightly different `curl` cannot hide behind a ticket you meant for tests.
 
@@ -35,8 +35,6 @@ Pressing **A** no longer saves the whole command string. It mints a **ticket**: 
 - `hermit` — also hold network and MCP
 - `desktop` — also hold Hyprland / plugin / power
 - `read` — hold writes
-
-**Ghosts.** A deadly call outlines the real Hyprland windows that would be hit. You can mute toasts and still see the blast radius on the glass.
 
 **Lid.** When you lock the session, agents freeze. Unlocking the screen does **not** start them again. You get a card titled “while you were out,” and you choose: keep them frozen, unfreeze, or rewind.
 
@@ -163,7 +161,7 @@ That does not delete `~/.config/vigil` or `~/.local/state/vigil`. Those director
 
 ## Dependencies
 
-Python 3.11+ (stdlib only). On Omarchy: `notify-send`, `omarchy-shell`, and optionally `hyprctl` for window ghosts. No pip packages.
+Python 3.11+ (stdlib only). On Omarchy: `notify-send` and `omarchy-shell`. No pip packages.
 
 ## License
 
@@ -223,8 +221,6 @@ Vigil is a **consent UI on the hooked path**. It is not a jail, a sandbox, or a 
 **It cannot sandbox other plugins.** Omarchy plugins share `omarchy-shell`. Vigil cannot confine a sibling. It *can* refuse `omarchy plugin add` / `enable` / `remove`.
 
 **No Landlock, no seccomp, no cgroup.** An Omarchy plugin has no sudo and no install hooks. `vigil spawn --exec` stamps an envelope and execs. It does not jail the process.
-
-**Ghosts need Hyprland.** If `hyprctl` is missing, there are no outlines. The polkit card still works.
 
 **Rewind is not backup.** It restores git-tracked project files and a copy of `~/.config/omarchy`, `hypr`, and `vigil`. It does not delete files the agent created. It never touches secrets. It is not Timeshift.
 

@@ -6,7 +6,6 @@ import json
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
 
 from vigil.audit import append, tail
 from vigil.call import ToolCall
@@ -220,8 +219,7 @@ class RedactPersistenceTests(unittest.TestCase):
             self.assertIn("<redacted>", rows[0]["summary"])
             self.assertIn("<redacted>", rows[0]["reason"])
 
-    @patch("vigil.ghosts.shutil.which", return_value=None)
-    def test_pending_strips_command_secret(self, _which: object) -> None:
+    def test_pending_strips_command_secret(self) -> None:
         cmd = f"curl -H 'Authorization: Bearer {SECRET}' --password {SECRET}"
         call = bash(cmd)
         risk = classify(call)

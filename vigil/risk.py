@@ -578,7 +578,8 @@ def classify(call: ToolCall) -> Risk:
             "subagent",
             "Spawn another agent",
             call.summary
-            + " The child starts with an empty session wallet. Spawning a helper waits even in seatbelt.",
+            + " The child starts with an empty session wallet. The first spawn waits even in seatbelt."
+            + " S covers later spawns in this session. A covers this agent and project until revoked.",
             blast="child wallet empty",
             hold=True,
         )

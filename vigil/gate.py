@@ -33,7 +33,7 @@ from vigil.envelope import apply_envelope
 from vigil.folders import envelope_for_cwd, is_exclusive
 from vigil.passport import envelope_for, list_passports, make_id, upsert as upsert_passport
 from vigil.ticket import project_id
-from vigil.wallet import DEFAULT_MAX_CHILDREN, over_cap, record as record_child
+
 from vigil.pending import write_surprise
 from vigil.rewind import should_cow, snapshot_file
 from vigil.risk import ALLOW, ASK, CRITICAL_CLASSES, DENY, Risk, classify, is_secret_path, path_inside
@@ -100,9 +100,7 @@ def apply_mode(mode: str, classified: str, hold: bool = False) -> str:
 def _apply_human(action: str, policy: Policy, risk: Risk, session_id: str) -> tuple[str, str]:
     if action == "allow":
         return ALLOW, "Allowed once."
-    if action in {"session", "always"} and (
-        risk.class_id in CRITICAL_CLASSES or risk.class_id == "subagent-cap"
-    ):
+    if action in {"session", "always"} and risk.class_id in CRITICAL_CLASSES:
         return ALLOW, "Allowed once. This class cannot be ticketed."
     if action == "session":
         policy.remember_session(session_id, risk.rule_key)
@@ -193,17 +191,6 @@ def gate_call(
     env_name = envelope_for_cwd(home, cwd, env_name)
     risk = apply_envelope(env_name, risk, call)
     passport_id = make_id(call.agent_hint, call.session_id, None)
-    if call.tool == "subagent" and over_cap(home, passport_id, pol.max_subagents or DEFAULT_MAX_CHILDREN):
-        from dataclasses import replace
-
-        risk = replace(
-            risk,
-            decision=DENY,
-            hold=True,
-            class_id="subagent-cap",
-            title="Too many helper agents today",
-            reason=f"This agent already spawned {pol.max_subagents} helpers today.",
-        )
     if call.path and call.tool == "write":
         held = claim_conflict(home, call.path, passport_id)
         if held:
@@ -231,8 +218,6 @@ def gate_call(
                     reason=f"{owner.get('agent') or 'another agent'} is already the writer here.",
                 )
     override = pol.key_override(risk, call.session_id)
-    if risk.class_id == "subagent-cap":
-        override = None
     effective = "seatbelt" if pol.is_trusted(call.cwd, now) and mode == "ask" else mode
     decision = override or apply_mode(effective, risk.decision, hold=risk.hold)
     reason = risk.reason
@@ -270,8 +255,6 @@ def gate_call(
             session_id=call.session_id,
             cwd=cwd,
         )
-        if call.tool == "subagent":
-            record_child(home, passport_id)
         if call.tool == "write" and call.path:
             take_claim(home, call.path, passport_id, agent=call.agent_hint)
             if should_cow(call.path, home):

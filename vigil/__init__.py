@@ -1,6 +1,6 @@
 """Vigil — permission broker for coding agents on Omarchy."""
 
-__version__ = "0.6.11"
+__version__ = "0.6.12"
 PLUGIN_ID = "brwsk.vigil"
 SNAPSHOT_SCHEMA = 1
 POLICY_SCHEMA = 1

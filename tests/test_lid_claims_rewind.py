@@ -125,25 +125,3 @@ class PrivacyTests(unittest.TestCase):
             self.assertEqual(len(rows), 2)
             self.assertEqual(rows[1]["prev"], rows[0]["hash"])
             self.assertTrue(rows[0]["hash"])
-
-
-class GhostsTests(unittest.TestCase):
-    def test_empty_without_hyprctl(self) -> None:
-        from vigil.call import ToolCall
-        from vigil.ghosts import ghosts_for
-
-        call = ToolCall(
-            event="pre_tool_use",
-            tool="bash",
-            raw_tool="run_terminal_command",
-            command="rm -rf /",
-            path=None,
-            cwd="/tmp",
-            workspace="/tmp",
-            session_id="s",
-            permission_mode="",
-            agent_hint="grok",
-            raw_input={},
-        )
-        with patch("vigil.ghosts.shutil.which", return_value=None):
-            self.assertEqual(ghosts_for(call), [])

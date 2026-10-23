@@ -110,7 +110,7 @@ Vigil does two different jobs. Do not mix them up.
 | --- | --- |
 | `grok` | Grok |
 | `claude` | Claude Code |
-| `opencode` | OpenCode |
+| `opencode`, `opencode.exe` | OpenCode |
 | `codex` | Codex |
 | `cursor-agent` | Cursor |
 | `copilot` | Copilot CLI |
@@ -120,6 +120,8 @@ Vigil does two different jobs. Do not mix them up.
 | `omp` | Oh My Pi |
 | `hermes` | Hermes |
 | `ori` | Ori |
+
+OpenCode's npm package execs `opencode.exe` on Linux. That name is the same agent as `opencode`.
 
 The bar lists these processes. Panic sends SIGTERM to every one of them. Freeze and lock also SIGSTOP every classified process, including ones with no hook. Unlocking does not continue them. Unfreeze does. A process Vigil does not name is still invisible here: ChatGPT in a browser, a Cursor GUI with no `cursor-agent` binary, and anything else.
 

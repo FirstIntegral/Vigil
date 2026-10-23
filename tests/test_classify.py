@@ -44,6 +44,24 @@ class ClassifyTests(unittest.TestCase):
         assert match is not None
         self.assertEqual(match.spec.display, "Claude Code")
 
+    def test_opencode_npm_exe_is_opencode(self) -> None:
+        # @opencode/cli maps the command to bin/opencode.exe on Linux.
+        # mise execs that ELF, so comm, exe, and argv0 are all opencode.exe.
+        exe = (
+            "/home/brwsk/.local/share/mise/installs/opencode/2.1.3/"
+            "node_modules/@opencode/cli/bin/opencode.exe"
+        )
+        match = classify(proc(81807, "opencode.exe", cmdline=(exe,), exe=exe))
+        assert match is not None
+        self.assertEqual(match.spec.id, "opencode")
+        self.assertEqual(match.spec.display, "OpenCode")
+        self.assertEqual(match.matched_bin, "opencode.exe")
+
+        plain = classify(proc(3, "opencode", exe="/usr/local/bin/opencode"))
+        assert plain is not None
+        self.assertEqual(plain.spec.id, "opencode")
+        self.assertEqual(plain.matched_bin, "opencode")
+
     def test_pgrep_is_not_an_agent(self) -> None:
         self.assertIsNone(
             classify(

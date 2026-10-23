@@ -22,7 +22,9 @@ class AgentSpec:
 AGENTS: tuple[AgentSpec, ...] = (
     AgentSpec("grok", "Grok", ("grok",)),
     AgentSpec("claude", "Claude Code", ("claude",)),
-    AgentSpec("opencode", "OpenCode", ("opencode",)),
+    # npm @opencode/cli points bin at opencode.exe on Linux too. mise execs
+    # that ELF, so comm is opencode.exe. install.sh still uses opencode.
+    AgentSpec("opencode", "OpenCode", ("opencode", "opencode.exe")),
     AgentSpec("codex", "Codex", ("codex",)),
     AgentSpec("cursor-agent", "Cursor", ("cursor-agent",)),
     AgentSpec("copilot", "Copilot CLI", ("copilot",)),

@@ -209,3 +209,79 @@ class GateTests(unittest.TestCase):
             )
             self.assertEqual(result.decision, ALLOW)
             self.assertEqual(result.response, {})
+
+
+def claude_call(tool: str, tool_input: dict, event: str = "PreToolUse") -> dict:
+    """Claude Code / Codex snake_case envelope."""
+    return {
+        "session_id": "sess-c",
+        "transcript_path": "/tmp/t.jsonl",
+        "cwd": "/home/brwsk/Projects/Vigil",
+        "permission_mode": "bypassPermissions",
+        "hook_event_name": event,
+        "tool_name": tool,
+        "tool_input": tool_input,
+    }
+
+
+class ClaudeDialectTests(unittest.TestCase):
+    """Claude Code rejects top-level `decision` other than approve|block.
+
+    One invalid field fails validation of the whole object, so a deny
+    in the Grok shape would not reach Claude at all.
+    """
+
+    def assert_claude_valid(self, response: dict) -> None:
+        self.assertNotIn("decision", response)
+        self.assertNotIn("reason", response)
+
+    def test_allow_is_empty_object(self) -> None:
+        with TemporaryDirectory() as tmp:
+            result = gate_payload(claude_call("Bash", {"command": "pytest"}), home=Path(tmp))
+            self.assertEqual(result.decision, ALLOW)
+            self.assertEqual(result.response, {})
+
+    def test_off_mode_read_is_empty_object(self) -> None:
+        with TemporaryDirectory() as tmp:
+            save_policy(Path(tmp), Policy(mode="off"))
+            result = gate_payload(claude_call("Read", {"file_path": "/etc/hostname"}), home=Path(tmp))
+            self.assertEqual(result.response, {})
+
+    def test_deny_uses_hook_specific_output(self) -> None:
+        with TemporaryDirectory() as tmp:
+            save_policy(Path(tmp), ask_policy())
+            result = gate_payload(
+                claude_call("Bash", {"command": "rm -rf /"}), home=Path(tmp), wait_fn=lambda *_: None
+            )
+            self.assertEqual(result.decision, DENY)
+            self.assert_claude_valid(result.response)
+            specific = result.response["hookSpecificOutput"]
+            self.assertEqual(specific["hookEventName"], "PreToolUse")
+            self.assertEqual(specific["permissionDecision"], "deny")
+            self.assertTrue(specific["permissionDecisionReason"])
+
+    def test_frozen_deny_uses_hook_specific_output(self) -> None:
+        with TemporaryDirectory() as tmp:
+            save_policy(Path(tmp), Policy(frozen=True))
+            result = gate_payload(claude_call("Bash", {"command": "pytest"}), home=Path(tmp))
+            self.assertEqual(result.decision, DENY)
+            self.assert_claude_valid(result.response)
+            self.assertEqual(result.response["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_post_tool_is_empty_object(self) -> None:
+        with TemporaryDirectory() as tmp:
+            result = gate_payload(
+                claude_call("Read", {"file_path": "/tmp/x"}, event="PostToolUse"), home=Path(tmp)
+            )
+            self.assertEqual(result.response, {})
+
+    def test_grok_shape_unchanged(self) -> None:
+        with TemporaryDirectory() as tmp:
+            result = gate_payload(grok_bash("pytest"), home=Path(tmp))
+            self.assertEqual(result.response["decision"], "allow")
+            self.assertEqual(result.response["hookSpecificOutput"]["permissionDecision"], "allow")
+
+    def test_dialect_detection(self) -> None:
+        self.assertEqual(parse_envelope(claude_call("Bash", {})).dialect, "claude")
+        self.assertEqual(parse_envelope(grok_bash("ls")).dialect, "grok")
+        self.assertEqual(parse_envelope({}).dialect, "grok")

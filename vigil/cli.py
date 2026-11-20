@@ -10,7 +10,8 @@ from pathlib import Path
 
 from vigil import PLUGIN_ID, __version__
 from vigil.envelope import ENVELOPES, normalize as normalize_envelope
-from vigil.gate import gate_payload
+from vigil.call import envelope_dialect
+from vigil.gate import gate_payload, hook_response
 from vigil.install import install as install_hooks
 from vigil.install import uninstall as uninstall_hooks
 from vigil.kill import KillRefused, kill_agent
@@ -165,15 +166,11 @@ def cmd_gate(args: argparse.Namespace) -> int:
     try:
         result = gate_payload(raw, home=_home(args))
     except Exception as exc:  # last-resort: still speak hook JSON
-        payload = {
-            "decision": "deny",
-            "reason": f"Vigil crashed: {exc}",
-            "hookSpecificOutput": {
-                "hookEventName": "PreToolUse",
-                "permissionDecision": "deny",
-                "permissionDecisionReason": f"Vigil crashed: {exc}",
-            },
-        }
+        try:
+            dialect = envelope_dialect(json.loads(raw))
+        except Exception:
+            dialect = "grok"
+        payload = hook_response("deny", f"Vigil crashed: {exc}", dialect=dialect)
         sys.stdout.write(json.dumps(payload) + "\n")
         return 0
     sys.stdout.write(json.dumps(result.response) + "\n")

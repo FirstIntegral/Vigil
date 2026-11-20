@@ -54,6 +54,7 @@ def hook_response(
     reason: str,
     *,
     event: str = "pre_tool_use",
+    dialect: str = "grok",
 ) -> dict[str, Any]:
     """JSON the harness reads.
 
@@ -61,17 +62,27 @@ def hook_response(
     PostToolUse: Grok honors only ``block``. ``allow`` is logged as a hook
     failure on every call. Post cannot undo a call, so a quiet log is
     empty JSON.
+
+    ``dialect="claude"`` (Claude Code, Codex): top-level ``decision`` only
+    takes ``approve``/``block``, so it is left out. Allow is ``{}`` (no
+    opinion: the harness's own permission rules still run). Deny goes in
+    ``hookSpecificOutput.permissionDecision``.
     """
     if event != "pre_tool_use":
         return {}
+    specific = {
+        "hookEventName": "PreToolUse",
+        "permissionDecision": decision,
+        "permissionDecisionReason": reason,
+    }
+    if dialect == "claude":
+        if decision == ALLOW:
+            return {}
+        return {"hookSpecificOutput": specific}
     return {
         "decision": decision,
         "reason": reason,
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": decision,
-            "permissionDecisionReason": reason,
-        },
+        "hookSpecificOutput": specific,
     }
 
 
@@ -144,11 +155,11 @@ def gate_call(
             )
         if _surprise(call):
             _freeze_surprise(home, call, pol)
-        resp = hook_response(ALLOW, "logged", event=call.event)
+        resp = hook_response(ALLOW, "logged", event=call.event, dialect=call.dialect)
         return GateResult(ALLOW, "logged", None, False, resp)
 
     if not call.is_pre_tool:
-        resp = hook_response(ALLOW, "not a tool gate", event=call.event)
+        resp = hook_response(ALLOW, "not a tool gate", event=call.event, dialect=call.dialect)
         return GateResult(ALLOW, "not a tool gate", None, False, resp)
 
     if _surprise(call):
@@ -167,7 +178,7 @@ def gate_call(
                     "sessionId": call.session_id,
                 },
             )
-        resp = hook_response(DENY, reason, event=call.event)
+        resp = hook_response(DENY, reason, event=call.event, dialect=call.dialect)
         return GateResult(DENY, reason, None, False, resp)
 
     mode = pol.effective_mode()
@@ -176,13 +187,13 @@ def gate_call(
         if audit:
             audit_append(home, {"event": "deny", "why": "frozen", "mode": mode, "summary": call.summary})
         notify("Vigil · frozen", call.summary, urgency="critical", alert=pol.alert)
-        resp = hook_response(DENY, reason, event=call.event)
+        resp = hook_response(DENY, reason, event=call.event, dialect=call.dialect)
         return GateResult(DENY, reason, None, False, resp)
 
     if mode == "off":
         if audit:
             audit_append(home, {"event": "allow", "why": "off", "mode": mode, "summary": call.summary, "path": call.path})
-        resp = hook_response(ALLOW, "Vigil is off.", event=call.event)
+        resp = hook_response(ALLOW, "Vigil is off.", event=call.event, dialect=call.dialect)
         return GateResult(ALLOW, "Vigil is off.", None, False, resp)
 
     risk = classify(call)
@@ -293,7 +304,7 @@ def gate_call(
         )
         notify("Vigil denied", reason + "\n" + call.summary, urgency="critical", alert=pol.alert)
 
-    resp = hook_response(decision, reason, event=call.event)
+    resp = hook_response(decision, reason, event=call.event, dialect=call.dialect)
     return GateResult(decision, reason, risk, asked, resp)
 
 

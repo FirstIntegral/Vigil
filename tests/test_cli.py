@@ -41,3 +41,26 @@ class CliTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GateCrashTests(unittest.TestCase):
+    def _crash(self, payload: dict) -> dict:
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as tmp, patch(
+            "vigil.cli.gate_payload", side_effect=RuntimeError("boom")
+        ), patch("sys.stdin", StringIO(json.dumps(payload))):
+            buf = StringIO()
+            with patch("sys.stdout", buf):
+                rc = main(["--home", tmp, "gate"])
+        self.assertEqual(rc, 0)
+        return json.loads(buf.getvalue())
+
+    def test_crash_denies_in_claude_shape(self) -> None:
+        out = self._crash({"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {}})
+        self.assertNotIn("decision", out)
+        self.assertEqual(out["hookSpecificOutput"]["permissionDecision"], "deny")
+
+    def test_crash_denies_in_grok_shape(self) -> None:
+        out = self._crash({"hookEventName": "pre_tool_use", "toolName": "run_terminal_command"})
+        self.assertEqual(out["decision"], "deny")

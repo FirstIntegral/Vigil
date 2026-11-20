@@ -100,6 +100,8 @@ class ToolCall:
     permission_mode: str
     agent_hint: str
     raw_input: dict[str, Any] = field(default_factory=dict)
+    # Reply shape the harness accepts. See envelope_dialect().
+    dialect: str = "grok"
 
     @property
     def is_pre_tool(self) -> bool:
@@ -119,6 +121,24 @@ class ToolCall:
         if self.path:
             return self.path
         return self.raw_tool or self.tool
+
+
+def envelope_dialect(data: Any) -> str:
+    """Which hook reply shape the caller accepts.
+
+    ``claude``: snake_case envelope (Claude Code, Codex). Top-level
+    ``decision`` must be ``approve``/``block`` or absent; one bad value
+    fails validation of the whole reply, deny included.
+    ``grok``: camelCase envelope (Grok, the OpenCode plugin) and anything
+    unrecognised. Keeps top-level ``decision: allow|deny``.
+    """
+    if not isinstance(data, dict):
+        return "grok"
+    if "toolName" in data or "hookEventName" in data:
+        return "grok"
+    if "tool_name" in data or "hook_event_name" in data:
+        return "claude"
+    return "grok"
 
 
 def parse_envelope(data: dict[str, Any]) -> ToolCall:
@@ -161,4 +181,5 @@ def parse_envelope(data: dict[str, Any]) -> ToolCall:
         permission_mode=permission_mode,
         agent_hint=agent_hint,
         raw_input=tool_input,
+        dialect=envelope_dialect(data),
     )
